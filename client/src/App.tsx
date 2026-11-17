@@ -6,6 +6,9 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import ProductPage from "./pages/ProductPage";
+import CartPage from "./pages/CartPage";
+import AdminPage from "./pages/AdminPage";
+import { StoreProvider } from "./contexts/StoreContext";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -13,6 +16,8 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/product/:id"} component={ProductPage} />
+      <Route path={"/cart"} component={CartPage} />
+      <Route path={"/admin"} component={AdminPage} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -33,8 +38,10 @@ function App() {
         // switchable
       >
         <TooltipProvider>
-          <Toaster />
-          <Router />
+          <StoreProvider>
+            <Toaster />
+            <Router />
+          </StoreProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
