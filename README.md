@@ -1,6 +1,6 @@
 # Zanora — Women's Accessories Store
 
-Zanora is a Persian, right-to-left women's accessories storefront with a refined editorial visual system. The project includes product discovery, advanced filters, a persistent shopping cart, authenticated admin access, Stripe Checkout, order history, inventory management, discount codes, and a durable order database.
+Zanora is a Persian, right-to-left women's accessories storefront with a refined editorial visual system. The project includes product discovery, advanced filters, a persistent shopping cart, authenticated admin access, Stripe Checkout, order history, inventory management, discount codes, sales analytics, and product reviews.
 
 ## Demo
 
@@ -46,6 +46,8 @@ The storefront displays prices in Iranian تومان. Stripe Checkout uses a tes
 - Sales metrics, recent orders, low-stock products, product search, and logout
 - Inventory controls for stock quantity and low-stock thresholds, persisted in MySQL
 - Discount management for percentage or fixed discounts, minimum order amounts, expiry dates, and activation state
+- Sales reporting for paid orders, daily revenue, average order value, top products, and inventory health
+- Product reviews and five-star ratings, with verified-purchase enforcement before publishing
 
 ## Tech stack
 
@@ -112,7 +114,7 @@ The Stripe webhook endpoint is `/api/stripe/webhook`. It rejects unsigned or sta
 
 ## Database
 
-The schema is in `drizzle/schema.ts`. The current migrations create `users`, `orders`, `orderItems`, `processedStripeEvents`, `inventory`, and `discounts`.
+The schema is in `drizzle/schema.ts`. The current migrations create `users`, `orders`, `orderItems`, `processedStripeEvents`, `inventory`, `discounts`, and `productReviews`.
 
 Generate and apply migrations with:
 

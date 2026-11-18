@@ -63,9 +63,22 @@ export const discounts = mysqlTable("discounts", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+export const productReviews = mysqlTable("productReviews", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull(),
+  userId: int("userId").notNull(),
+  rating: int("rating").notNull(),
+  title: varchar("title", { length: 160 }),
+  body: text("body").notNull(),
+  isApproved: int("isApproved").notNull().default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type Inventory = typeof inventory.$inferSelect;
 export type Discount = typeof discounts.$inferSelect;
+export type ProductReview = typeof productReviews.$inferSelect;

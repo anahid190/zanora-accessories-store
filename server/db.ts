@@ -1,6 +1,6 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { discounts, inventory, InsertUser, orderItems, orders, processedStripeEvents, users } from "../drizzle/schema";
+import { discounts, inventory, InsertUser, orderItems, orders, processedStripeEvents, productReviews, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -120,5 +120,44 @@ export async function toggleDiscount(id: number, isActive: boolean) {
 export async function deleteDiscount(id: number) {
   const db = await getDb(); if (!db) throw new Error("Database is not available");
   await db.delete(discounts).where(eq(discounts.id, id));
+  return { success: true } as const;
+}
+
+export async function getSalesReport(days = 30) {
+  const db = await getDb(); if (!db) throw new Error("Database is not available");
+  const [paidOrders, paidItems, stockRows] = await Promise.all([
+    db.select().from(orders).where(eq(orders.status, "paid")).orderBy(desc(orders.createdAt)),
+    db.select().from(orderItems),
+    db.select().from(inventory).orderBy(inventory.stock),
+  ]);
+  const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - days + 1);
+  const periodOrders = paidOrders.filter((order) => new Date(order.createdAt) >= start);
+  const totalSales = periodOrders.reduce((sum, order) => sum + order.amountTotal, 0);
+  const itemByOrder = new Map<number, typeof paidItems>();
+  paidItems.forEach((item) => { const list = itemByOrder.get(item.orderId) || []; list.push(item); itemByOrder.set(item.orderId, list); });
+  const topProducts = new Map<number, { productId: number; productName: string; quantity: number; revenue: number }>();
+  periodOrders.forEach((order) => (itemByOrder.get(order.id) || []).forEach((item) => { const current = topProducts.get(item.productId) || { productId: item.productId, productName: item.productName, quantity: 0, revenue: 0 }; current.quantity += item.quantity; current.revenue += item.unitAmount * item.quantity; topProducts.set(item.productId, current); }));
+  const dailySales = Array.from({ length: Math.min(days, 30) }, (_, index) => { const date = new Date(start); date.setDate(start.getDate() + index); const key = date.toISOString().slice(0, 10); const dayOrders = periodOrders.filter((order) => new Date(order.createdAt).toISOString().slice(0, 10) === key); return { date: key, label: new Intl.DateTimeFormat("fa-IR", { month: "short", day: "numeric" }).format(date), sales: dayOrders.reduce((sum, order) => sum + order.amountTotal, 0), orders: dayOrders.length }; });
+  const lowStock = stockRows.filter((item) => item.stock <= item.lowStockThreshold);
+  return { periodDays: days, totalSales, orderCount: periodOrders.length, averageOrder: periodOrders.length ? Math.round(totalSales / periodOrders.length) : 0, dailySales, topProducts: [...topProducts.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5), inventory: { totalProducts: stockRows.length, unitsInStock: stockRows.reduce((sum, item) => sum + item.stock, 0), lowStockCount: lowStock.length, outOfStockCount: stockRows.filter((item) => item.stock === 0).length, lowStock: lowStock.slice(0, 5) } };
+}
+
+export async function listProductReviews(productId: number) {
+  const db = await getDb(); if (!db) throw new Error("Database is not available");
+  const rows = await db.select({ review: productReviews, userName: users.name }).from(productReviews).leftJoin(users, eq(productReviews.userId, users.id)).where(and(eq(productReviews.productId, productId), eq(productReviews.isApproved, 1))).orderBy(desc(productReviews.createdAt));
+  const average = rows.length ? rows.reduce((sum, row) => sum + row.review.rating, 0) / rows.length : 0;
+  return { average: Math.round(average * 10) / 10, count: rows.length, reviews: rows.map((row) => ({ ...row.review, userName: row.userName || "مشتری Zanora" })) };
+}
+
+export async function hasPurchasedProduct(userId: number, productId: number) {
+  const db = await getDb(); if (!db) throw new Error("Database is not available");
+  const result = await db.select({ id: orderItems.id }).from(orderItems).innerJoin(orders, eq(orderItems.orderId, orders.id)).where(and(eq(orders.userId, userId), eq(orders.status, "paid"), eq(orderItems.productId, productId))).limit(1);
+  return result.length > 0;
+}
+
+export async function createProductReview(input: { productId: number; userId: number; rating: number; title?: string | null; body: string }) {
+  const db = await getDb(); if (!db) throw new Error("Database is not available");
+  const body = input.body.trim(); if (input.rating < 1 || input.rating > 5 || !body) throw new Error("امتیاز و متن نظر الزامی است");
+  await db.insert(productReviews).values({ productId: input.productId, userId: input.userId, rating: input.rating, title: input.title?.trim() || null, body });
   return { success: true } as const;
 }

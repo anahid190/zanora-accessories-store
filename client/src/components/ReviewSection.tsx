@@ -1,0 +1,15 @@
+import { MessageCircle, Send, Star } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { startLogin } from "@/const";
+import { trpc } from "@/lib/trpc";
+
+export default function ReviewSection({ productId }: { productId: number }) {
+  const me = trpc.auth.me.useQuery();
+  const reviews = trpc.reviews.list.useQuery({ productId });
+  const utils = trpc.useUtils();
+  const create = trpc.reviews.create.useMutation({ onSuccess: () => { toast.success("نظر شما ثبت شد"); setRating(5); setTitle(""); setBody(""); utils.reviews.list.invalidate({ productId }); }, onError: (error) => toast.error(error.message) });
+  const [rating, setRating] = useState(5); const [title, setTitle] = useState(""); const [body, setBody] = useState("");
+  const summary = reviews.data;
+  return <section className="reviews-section"><div className="reviews-heading"><div><p className="eyebrow"><span /> تجربه خریداران</p><h2>نظرها و <em>امتیازها</em></h2></div><div className="review-summary"><strong>{summary?.average.toFixed(1) || "—"}</strong><span><span className="stars-gold">★★★★★</span><small>{summary?.count || 0} نظر</small></span></div></div><div className="reviews-layout"><div className="review-list">{reviews.isLoading ? <p className="review-empty">در حال دریافت نظرها…</p> : summary?.reviews.length ? summary.reviews.map((review) => <article className="review-card" key={review.id}><div className="review-card-top"><div className="review-avatar">{review.userName.slice(0, 1)}</div><div><b>{review.userName}</b><small>{new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium" }).format(new Date(review.createdAt))}{review.title ? ` · ${review.title}` : ""}</small></div><span className="stars-gold">{"★".repeat(review.rating)}<span className="stars-muted">{"★".repeat(5 - review.rating)}</span></span></div><p>{review.body}</p><span className="verified-review">خریدار تاییدشده</span></article>) : <div className="review-empty"><MessageCircle size={22} /><p>هنوز نظری ثبت نشده؛ تجربه‌ات را اولین نفر بنویس.</p></div>}</div><form className="review-form" onSubmit={(event) => { event.preventDefault(); if (!me.data) { startLogin(); return; } create.mutate({ productId, rating, title: title || null, body }); }}><h3>تجربه‌ات را بنویس</h3><p>ثبت نظر برای خریداران این محصول فعال است.</p><div className="rating-picker"><span>امتیاز تو</span><div>{[1, 2, 3, 4, 5].map((value) => <button type="button" key={value} className={value <= rating ? "selected" : ""} onClick={() => setRating(value)} aria-label={`${value} ستاره`}><Star size={19} fill="currentColor" /></button>)}</div></div><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="عنوان نظر (اختیاری)" maxLength={160} /><textarea value={body} onChange={(event) => setBody(event.target.value)} placeholder="از کیفیت، بسته‌بندی یا تجربه استفاده‌ات بگو…" minLength={10} maxLength={2000} required /><button className="review-submit" disabled={create.isPending}>{me.data ? "ثبت نظر" : "ورود و ثبت نظر"} <Send size={15} /></button></form></div></section>;
+}
