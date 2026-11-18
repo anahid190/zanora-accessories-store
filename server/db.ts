@@ -1,6 +1,6 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, orderItems, orders, processedStripeEvents, users } from "../drizzle/schema";
+import { discounts, inventory, InsertUser, orderItems, orders, processedStripeEvents, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -73,4 +73,52 @@ export async function hasProcessedStripeEvent(eventId: string) {
 export async function recordStripeEvent(eventId: string, eventType: string) {
   const db = await getDb(); if (!db) throw new Error("Database is not available");
   await db.insert(processedStripeEvents).values({ eventId, eventType }).onDuplicateKeyUpdate({ set: { eventType } });
+}
+
+export async function listInventory(productCatalog: Array<{ id: number; name: string }>) {
+  const db = await getDb(); if (!db) throw new Error("Database is not available");
+  const ids = productCatalog.map((product) => product.id);
+  const existing = await db.select().from(inventory).where(inArray(inventory.productId, ids));
+  const existingIds = new Set(existing.map((item) => item.productId));
+  const missing = productCatalog.filter((product) => !existingIds.has(product.id));
+  if (missing.length) await db.insert(inventory).values(missing.map((product) => ({ productId: product.id, productName: product.name, stock: 10, lowStockThreshold: 5 })));
+  return db.select().from(inventory).where(inArray(inventory.productId, ids)).orderBy(inventory.productId);
+}
+
+export async function updateInventory(productId: number, stock: number, lowStockThreshold: number) {
+  const db = await getDb(); if (!db) throw new Error("Database is not available");
+  await db.update(inventory).set({ stock, lowStockThreshold }).where(eq(inventory.productId, productId));
+  const result = await db.select().from(inventory).where(eq(inventory.productId, productId)).limit(1);
+  return result[0];
+}
+
+export async function listDiscounts() {
+  const db = await getDb(); if (!db) throw new Error("Database is not available");
+  return db.select().from(discounts).orderBy(desc(discounts.createdAt));
+}
+
+export async function createDiscount(input: { code: string; type: "percentage" | "fixed"; value: number; minOrderAmount: number; endsAt?: Date | null }) {
+  const db = await getDb(); if (!db) throw new Error("Database is not available");
+  const code = input.code.trim().toUpperCase();
+  if (!/^[A-Z0-9_-]{3,64}$/.test(code)) throw new Error("کد تخفیف باید فقط شامل حروف انگلیسی، عدد، خط تیره یا زیرخط باشد");
+  if (input.type === "percentage" && (input.value < 1 || input.value > 100)) throw new Error("درصد تخفیف باید بین ۱ تا ۱۰۰ باشد");
+  if (input.type === "fixed" && input.value < 1) throw new Error("مبلغ تخفیف نامعتبر است");
+  const result = await db.insert(discounts).values({ code, type: input.type, value: input.value, minOrderAmount: input.minOrderAmount, endsAt: input.endsAt ?? null });
+  const id = result[0]?.insertId;
+  if (!id) throw new Error("تخفیف ایجاد نشد");
+  const created = await db.select().from(discounts).where(eq(discounts.id, Number(id))).limit(1);
+  return created[0];
+}
+
+export async function toggleDiscount(id: number, isActive: boolean) {
+  const db = await getDb(); if (!db) throw new Error("Database is not available");
+  await db.update(discounts).set({ isActive: isActive ? 1 : 0 }).where(eq(discounts.id, id));
+  const result = await db.select().from(discounts).where(eq(discounts.id, id)).limit(1);
+  return result[0];
+}
+
+export async function deleteDiscount(id: number) {
+  const db = await getDb(); if (!db) throw new Error("Database is not available");
+  await db.delete(discounts).where(eq(discounts.id, id));
+  return { success: true } as const;
 }

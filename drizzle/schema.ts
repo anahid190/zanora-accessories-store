@@ -41,7 +41,31 @@ export const processedStripeEvents = mysqlTable("processedStripeEvents", {
   receivedAt: timestamp("receivedAt").defaultNow().notNull(),
 });
 
+export const inventory = mysqlTable("inventory", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull().unique(),
+  productName: varchar("productName", { length: 255 }).notNull(),
+  stock: int("stock").notNull().default(0),
+  lowStockThreshold: int("lowStockThreshold").notNull().default(5),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const discounts = mysqlTable("discounts", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 64 }).notNull().unique(),
+  type: mysqlEnum("type", ["percentage", "fixed"]).notNull(),
+  value: int("value").notNull(),
+  minOrderAmount: int("minOrderAmount").notNull().default(0),
+  isActive: int("isActive").notNull().default(1),
+  startsAt: timestamp("startsAt").defaultNow().notNull(),
+  endsAt: timestamp("endsAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
+export type Inventory = typeof inventory.$inferSelect;
+export type Discount = typeof discounts.$inferSelect;

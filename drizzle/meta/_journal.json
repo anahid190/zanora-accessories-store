@@ -15,6 +15,13 @@
       "when": 1794979873545,
       "tag": "0001_rare_the_hunter",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1794981056675,
+      "tag": "0002_slippery_puppet_master",
+      "breakpoints": true
     }
   ]
 }

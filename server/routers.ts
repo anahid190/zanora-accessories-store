@@ -1,7 +1,8 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
-import { listOrdersForUser } from "./db";
+import { createDiscount, deleteDiscount, listDiscounts, listInventory, listOrdersForUser, toggleDiscount, updateInventory } from "./db";
 import { createCheckoutSession } from "./stripe";
+import { products } from "../client/src/data/products";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -21,6 +22,16 @@ export const appRouter = router({
       user: { id: ctx.user.id, name: ctx.user.name, email: ctx.user.email, role: ctx.user.role },
       message: "Admin access verified",
     })),
+  }),
+  inventory: router({
+    list: adminProcedure.query(() => listInventory(products.map(({ id, name }) => ({ id, name })))),
+    update: adminProcedure.input(z.object({ productId: z.number().int().positive(), stock: z.number().int().min(0).max(100000), lowStockThreshold: z.number().int().min(0).max(100000) })).mutation(({ input }) => updateInventory(input.productId, input.stock, input.lowStockThreshold)),
+  }),
+  discounts: router({
+    list: adminProcedure.query(() => listDiscounts()),
+    create: adminProcedure.input(z.object({ code: z.string().min(3).max(64), type: z.enum(["percentage", "fixed"]), value: z.number().int().positive(), minOrderAmount: z.number().int().min(0), endsAt: z.string().optional().nullable() })).mutation(({ input }) => createDiscount({ ...input, endsAt: input.endsAt ? new Date(input.endsAt) : null })),
+    toggle: adminProcedure.input(z.object({ id: z.number().int().positive(), isActive: z.boolean() })).mutation(({ input }) => toggleDiscount(input.id, input.isActive)),
+    remove: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => deleteDiscount(input.id)),
   }),
   checkout: router({
     createSession: protectedProcedure.input(z.object({
