@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import ProductPage from "./pages/ProductPage";
 import CartPage from "./pages/CartPage";
 import AdminPage from "./pages/AdminPage";
+import OrdersPage from "./pages/OrdersPage";
 import { StoreProvider } from "./contexts/StoreContext";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
       <Route path={"/product/:id"} component={ProductPage} />
       <Route path={"/cart"} component={CartPage} />
       <Route path={"/admin"} component={AdminPage} />
+      <Route path={"/orders"} component={OrdersPage} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

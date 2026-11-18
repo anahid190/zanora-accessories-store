@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowUpLeft,
   ChevronDown,
+  Filter,
   Heart,
   Instagram,
   Menu,
@@ -15,16 +16,29 @@ import { toast } from "sonner";
 import { categories, products, type Category, type Product } from "@/data/products";
 import { useStore } from "@/contexts/StoreContext";
 
+type PriceBand = "همه" | "تا ۱ میلیون" | "۱ تا ۲ میلیون" | "۲ تا ۳ میلیون" | "۳ میلیون به بالا";
+type SortOption = "جدیدترین" | "ارزان‌ترین" | "گران‌ترین";
+
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<Category>("همه");
   const [mobileMenu, setMobileMenu] = useState(false);
   const [newsletter, setNewsletter] = useState("");
   const [liked, setLiked] = useState<number[]>([]);
+  const [priceBand, setPriceBand] = useState<PriceBand>("همه");
+  const [sortOption, setSortOption] = useState<SortOption>("جدیدترین");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const { cartCount, addToCart: addProductToCart } = useStore();
 
   const filteredProducts = useMemo(
-    () => activeCategory === "همه" ? products : products.filter((product) => product.category === activeCategory),
-    [activeCategory],
+    () => {
+      const matches = products.filter((product) => {
+        const categoryMatch = activeCategory === "همه" || product.category === activeCategory;
+        const priceMatch = priceBand === "همه" || (priceBand === "تا ۱ میلیون" && product.priceValue <= 1000000) || (priceBand === "۱ تا ۲ میلیون" && product.priceValue > 1000000 && product.priceValue <= 2000000) || (priceBand === "۲ تا ۳ میلیون" && product.priceValue > 2000000 && product.priceValue <= 3000000) || (priceBand === "۳ میلیون به بالا" && product.priceValue > 3000000);
+        return categoryMatch && priceMatch;
+      });
+      return [...matches].sort((a, b) => sortOption === "ارزان‌ترین" ? a.priceValue - b.priceValue : sortOption === "گران‌ترین" ? b.priceValue - a.priceValue : a.id - b.id);
+    },
+    [activeCategory, priceBand, sortOption],
   );
 
   const addToCart = (product: Product) => {
@@ -79,7 +93,8 @@ export default function Home() {
         </section>
 
         <section className="products-section container" id="products">
-          <div className="section-heading products-heading"><div><p className="eyebrow"><span></span> انتخاب سردبیر</p><h2>محبوب‌های <em>Zanora</em></h2></div><div className="filter-row"><button className={activeCategory === "همه" ? "active" : ""} onClick={() => setActiveCategory("همه")}>همه</button>{categories.map((category) => <button key={category.label} className={activeCategory === category.label ? "active" : ""} onClick={() => setActiveCategory(category.label)}>{category.label}</button>)}</div></div>
+          <div className="section-heading products-heading"><div><p className="eyebrow"><span></span> انتخاب سردبیر</p><h2>محبوب‌های <em>Zanora</em></h2></div><div className="filter-actions"><button className="advanced-filter-trigger" onClick={() => setFiltersOpen((value) => !value)}><Filter size={15} /> فیلتر پیشرفته <ChevronDown size={14} className={filtersOpen ? "rotated" : ""} /></button><span className="result-count">{filteredProducts.length} محصول</span></div></div>
+          <div className={`advanced-filter-panel ${filtersOpen ? "open" : ""}`}><div className="filter-group"><span>دسته‌بندی</span><div className="filter-pills"><button className={activeCategory === "همه" ? "active" : ""} onClick={() => setActiveCategory("همه")}>همه <small>{products.length}</small></button>{categories.map((category) => <button key={category.label} className={activeCategory === category.label ? "active" : ""} onClick={() => setActiveCategory(category.label)}>{category.label} <small>{products.filter((product) => product.category === category.label).length}</small></button>)}</div></div><div className="filter-group"><span>بازه قیمت</span><div className="filter-pills">{(["همه", "تا ۱ میلیون", "۱ تا ۲ میلیون", "۲ تا ۳ میلیون", "۳ میلیون به بالا"] as PriceBand[]).map((band) => <button key={band} className={priceBand === band ? "active" : ""} onClick={() => setPriceBand(band)}>{band}</button>)}</div></div><label className="sort-control">مرتب‌سازی <select value={sortOption} onChange={(event) => setSortOption(event.target.value as SortOption)}><option>جدیدترین</option><option>ارزان‌ترین</option><option>گران‌ترین</option></select><ChevronDown size={13} /></label></div>
           <div className="product-grid">{filteredProducts.map((product) => <article className="product-card" key={product.id}><div className="product-image"><a href={`/product/${product.id}`} aria-label={`مشاهده ${product.name}`}><img src={product.image} alt={product.name} /></a>{product.badge && <span className="product-badge">{product.badge}</span>}<button className={`heart-button ${liked.includes(product.id) ? "liked" : ""}`} onClick={() => setLiked((items) => items.includes(product.id) ? items.filter((id) => id !== product.id) : [...items, product.id])} aria-label="افزودن به علاقه‌مندی‌ها"><Heart size={18} fill={liked.includes(product.id) ? "currentColor" : "none"} /></button></div><a className="product-info product-info-link" href={`/product/${product.id}`}><div><h3>{product.name}</h3><p>{product.category}</p></div><strong>{product.price}</strong></a><button className="add-button" onClick={() => addToCart(product)}>افزودن به سبد <ArrowLeft size={16} /></button></article>)}</div>
         </section>
 
