@@ -34,6 +34,8 @@ Do not treat the browser return URL as proof of payment. The order changes to `p
 
 If an active code exists, enter it in the cart's **کد تخفیف** field. The server validates the code, minimum purchase, active state, and expiry before showing the discount. The same validation is repeated while creating Checkout, so the browser cannot change the final amount. Checkout reserves the requested stock for 30 minutes; failed, canceled, and expired pending orders release the reservation.
 
+Select an address in the **آدرس تحویل سفارش** section before continuing to payment. Checkout verifies that the address belongs to the signed-in customer and copies its recipient, phone, location, postal code, and full address into the order snapshot. Editing the address later does not modify the historical order.
+
 The `/orders` page requires a signed-in Manus account. It shows pending, paid, and failed order states from the database.
 
 Expand an order to inspect its line items, shipping amount, applied discount, and final total. After a successful Stripe webhook, physical stock is decremented and the reservation is released.

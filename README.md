@@ -42,6 +42,7 @@ API and mobile integration documentation is available in [`docs/API.md`](docs/AP
 - Payment status history in `/orders`
 - Expandable order details with items, shipping, discount, and final totals
 - Customer account page at `/account` with profile and saved shipping addresses
+- Address selection during checkout with immutable order-level shipping snapshots
 
 The storefront displays prices in Iranian تومان. Stripe Checkout uses a test USD conversion because Stripe does not support Iranian تومان as a settlement currency in this integration. The current demo conversion is 100,000 تومان = 1 USD.
 

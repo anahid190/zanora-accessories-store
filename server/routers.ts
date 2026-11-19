@@ -41,6 +41,7 @@ export const appRouter = router({
     quote: protectedProcedure.input(z.object({ items: z.array(z.object({ productId: z.number().int().positive(), quantity: z.number().int().positive().max(10) })).min(1), discountCode: z.string().max(64).optional().nullable() })).mutation(({ input }) => getCheckoutQuote(input)),
     createSession: protectedProcedure.input(z.object({
       origin: z.string().url(),
+      addressId: z.number().int().positive(),
       items: z.array(z.object({ productId: z.number().int().positive(), quantity: z.number().int().positive().max(10) })).min(1),
       discountCode: z.string().max(64).optional().nullable(),
     })).mutation(async ({ ctx, input }) => createCheckoutSession(input, ctx.user, ctx.req)),
