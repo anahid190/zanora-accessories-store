@@ -14,6 +14,8 @@ Key routes:
 - `/orders` — authenticated order history
 - `/admin` — Manus OAuth-protected admin dashboard
 
+API and mobile integration documentation is available in [`docs/API.md`](docs/API.md). It covers tRPC procedures, admin authorization, OAuth session behavior, request examples, and the current mobile-readiness gaps.
+
 > The preview URL is a development/demo environment. For production, publish the project and configure a stable domain.
 
 ## Features
@@ -132,6 +134,7 @@ server/                 Express, tRPC, auth, database, and Stripe code
 drizzle/                Database schema and migrations
 public/                 Route manifest and brand assets
 docs/DEMO.md            Step-by-step demo walkthrough
+docs/API.md             Admin API contract and mobile integration guide
 ```
 
 ## Production checklist
