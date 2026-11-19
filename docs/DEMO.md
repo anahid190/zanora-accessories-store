@@ -30,9 +30,13 @@ CVC: any three digits
 
 Do not treat the browser return URL as proof of payment. The order changes to `paid` only after the signed `checkout.session.completed` webhook is accepted.
 
-## 4. View order history
+## 4. Apply a discount and view order history
+
+If an active code exists, enter it in the cart's **کد تخفیف** field. The server validates the code, minimum purchase, active state, and expiry before showing the discount. The same validation is repeated while creating Checkout, so the browser cannot change the final amount. Checkout reserves the requested stock for 30 minutes; failed, canceled, and expired pending orders release the reservation.
 
 The `/orders` page requires a signed-in Manus account. It shows pending, paid, and failed order states from the database.
+
+Expand an order to inspect its line items, shipping amount, applied discount, and final total. After a successful Stripe webhook, physical stock is decremented and the reservation is released.
 
 ## 5. Review a product
 
@@ -44,7 +48,7 @@ Visit `/admin`. The page stays logged out until Manus OAuth succeeds. The server
 
 ### Inventory
 
-Open **موجودی** to edit each product's stock quantity and low-stock threshold. The values are persisted in the `inventory` table. Products at or below their threshold are marked as needing replenishment.
+Open **موجودی** to edit each product's physical stock quantity and low-stock threshold. The values are persisted in the `inventory` table. The panel also shows active reservations and available-to-sell stock. Physical stock cannot be edited below the currently reserved quantity.
 
 ### Discounts
 
@@ -52,9 +56,13 @@ Open **تخفیف‌ها** to create percentage or fixed-value discount records.
 
 ### Sales reports
 
-Open **گزارش‌ها** and switch between seven- and thirty-day views. The report calculates paid revenue, paid-order count, average order value, daily sales, best-selling products, units in stock, low-stock products, and out-of-stock products. The report seeds missing catalog inventory rows before calculating inventory health.
+The overview now shows live current-month sales, paid order count, new customers, average paid order, recent orders, and low-stock alerts. Open **گزارش‌ها** and switch between seven- and thirty-day views for paid revenue, daily sales, best-selling products, units available to sell, low-stock products, and out-of-stock products.
 
-## 7. Webhook verification
+## 7. Manage the customer account
+
+Visit `/account` after signing in. Customers can edit their display name, add/remove shipping addresses, choose a default address, and jump to the expandable order history at `/orders`.
+
+## 8. Webhook verification
 
 The server receives Stripe events at `/api/stripe/webhook`. The route is registered before Express's JSON parser so the raw request bytes remain available for signature verification. Processed event IDs are stored in `processedStripeEvents`, making repeated delivery safe.
 
@@ -62,6 +70,4 @@ The server receives Stripe events at `/api/stripe/webhook`. The route is registe
 
 - The product catalog is intentionally small and uses editorial image URLs.
 - Storefront prices are shown in تومان, while the Stripe demo uses a USD conversion.
-- The top-level overview KPI cards and sample recent-order rows retain presentation/demo values; the dedicated reports tab uses paid-order data.
-- Discount records are managed in the database; connecting these custom codes directly to the final Stripe amount is a separate production checkout step.
-- Fulfillment, shipping labels, refunds, and production inventory synchronization are not implemented.
+- Shipping fulfillment, labels, refunds, delivery status, and carrier synchronization are not implemented.

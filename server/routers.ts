@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
-import { createDiscount, createProductReview, deleteDiscount, getSalesReport, hasPurchasedProduct, listDiscounts, listInventory, listOrdersForUser, listProductReviews, toggleDiscount, updateInventory } from "./db";
-import { createCheckoutSession } from "./stripe";
+import { createCustomerAddress, createDiscount, createProductReview, deleteCustomerAddress, deleteDiscount, getAdminDashboardSummary, getSalesReport, hasPurchasedProduct, listCustomerAddresses, listDiscounts, listInventory, listOrdersForUser, listProductReviews, setDefaultAddress, toggleDiscount, updateInventory, updateUserProfile } from "./db";
+import { createCheckoutSession, getCheckoutQuote } from "./stripe";
 import { products } from "../client/src/data/products";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -18,10 +18,7 @@ export const appRouter = router({
     }),
   }),
   admin: router({
-    dashboard: adminProcedure.query(({ ctx }) => ({
-      user: { id: ctx.user.id, name: ctx.user.name, email: ctx.user.email, role: ctx.user.role },
-      message: "Admin access verified",
-    })),
+    dashboard: adminProcedure.query(async ({ ctx }) => { await listInventory(products.map(({ id, name }) => ({ id, name }))); return { user: { id: ctx.user.id, name: ctx.user.name, email: ctx.user.email, role: ctx.user.role }, message: "Admin access verified", summary: await getAdminDashboardSummary() }; }),
   }),
   inventory: router({
     list: adminProcedure.query(() => listInventory(products.map(({ id, name }) => ({ id, name })))),
@@ -41,13 +38,22 @@ export const appRouter = router({
     create: protectedProcedure.input(z.object({ productId: z.number().int().positive(), rating: z.number().int().min(1).max(5), title: z.string().max(160).optional().nullable(), body: z.string().min(10).max(2000) })).mutation(async ({ ctx, input }) => { if (!(await hasPurchasedProduct(ctx.user.id, input.productId))) throw new Error("ثبت نظر فقط پس از خرید و پرداخت محصول امکان‌پذیر است"); return createProductReview({ ...input, userId: ctx.user.id }); }),
   }),
   checkout: router({
+    quote: protectedProcedure.input(z.object({ items: z.array(z.object({ productId: z.number().int().positive(), quantity: z.number().int().positive().max(10) })).min(1), discountCode: z.string().max(64).optional().nullable() })).mutation(({ input }) => getCheckoutQuote(input)),
     createSession: protectedProcedure.input(z.object({
       origin: z.string().url(),
       items: z.array(z.object({ productId: z.number().int().positive(), quantity: z.number().int().positive().max(10) })).min(1),
+      discountCode: z.string().max(64).optional().nullable(),
     })).mutation(async ({ ctx, input }) => createCheckoutSession(input, ctx.user, ctx.req)),
   }),
   orders: router({
     mine: protectedProcedure.query(({ ctx }) => listOrdersForUser(ctx.user.id)),
+  }),
+  profile: router({
+    update: protectedProcedure.input(z.object({ name: z.string().min(2).max(120) })).mutation(({ ctx, input }) => updateUserProfile(ctx.user.id, input)),
+    addresses: protectedProcedure.query(({ ctx }) => listCustomerAddresses(ctx.user.id)),
+    addAddress: protectedProcedure.input(z.object({ recipient: z.string().min(2).max(160), phone: z.string().min(8).max(32), province: z.string().min(2).max(80), city: z.string().min(2).max(80), address: z.string().min(8).max(1000), postalCode: z.string().min(5).max(32), isDefault: z.boolean() })).mutation(({ ctx, input }) => createCustomerAddress(ctx.user.id, input)),
+    removeAddress: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => deleteCustomerAddress(ctx.user.id, input.id)),
+    setDefaultAddress: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => setDefaultAddress(ctx.user.id, input.id)),
   }),
 });
 

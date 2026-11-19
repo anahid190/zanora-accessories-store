@@ -12,6 +12,7 @@ Key routes:
 - `/product/:id` — product detail page
 - `/cart` — persistent shopping cart and checkout
 - `/orders` — authenticated order history
+- `/account` — customer profile and saved shipping addresses
 - `/admin` — Manus OAuth-protected admin dashboard
 
 API and mobile integration documentation is available in [`docs/API.md`](docs/API.md). It covers tRPC procedures, admin authorization, OAuth session behavior, request examples, and the current mobile-readiness gaps.
@@ -34,9 +35,13 @@ API and mobile integration documentation is available in [`docs/API.md`](docs/AP
 - Stripe Checkout Session creation on the server
 - Server-side product and price validation
 - Orders and order items persisted in MySQL through Drizzle ORM
+- Server-validated percentage/fixed discount codes with minimum order and expiry checks
+- Atomic inventory reservation at checkout, release on failure/expiry, and decrement after successful payment
 - Stripe webhook signature verification using the exact raw request body
 - Idempotent Stripe event processing
 - Payment status history in `/orders`
+- Expandable order details with items, shipping, discount, and final totals
+- Customer account page at `/account` with profile and saved shipping addresses
 
 The storefront displays prices in Iranian تومان. Stripe Checkout uses a test USD conversion because Stripe does not support Iranian تومان as a settlement currency in this integration. The current demo conversion is 100,000 تومان = 1 USD.
 
@@ -46,7 +51,9 @@ The storefront displays prices in Iranian تومان. Stripe Checkout uses a tes
 - Server-side `adminProcedure` authorization
 - Owner/admin role resolution from the authenticated Manus identity
 - Sales metrics, recent orders, low-stock products, product search, and logout
+- Live overview KPIs and recent orders from paid/current-month database data
 - Inventory controls for stock quantity and low-stock thresholds, persisted in MySQL
+- Reserved-stock visibility and available-to-sell calculations
 - Discount management for percentage or fixed discounts, minimum order amounts, expiry dates, and activation state
 - Sales reporting for paid orders, daily revenue, average order value, top products, and inventory health
 - Product reviews and five-star ratings, with verified-purchase enforcement before publishing
@@ -116,7 +123,7 @@ The Stripe webhook endpoint is `/api/stripe/webhook`. It rejects unsigned or sta
 
 ## Database
 
-The schema is in `drizzle/schema.ts`. The current migrations create `users`, `orders`, `orderItems`, `processedStripeEvents`, `inventory`, `discounts`, and `productReviews`.
+The schema is in `drizzle/schema.ts`. The current migrations create `users`, `orders`, `orderItems`, `processedStripeEvents`, `inventory`, `discounts`, `productReviews`, and `customerAddresses`.
 
 Generate and apply migrations with:
 
@@ -142,7 +149,7 @@ docs/API.md             Admin API contract and mobile integration guide
 - Publish the project behind a stable HTTPS domain.
 - Claim/configure the Stripe sandbox, then replace test keys with live keys in the managed integration settings.
 - Verify the production webhook endpoint and inspect Stripe delivery logs.
-- Replace the demo product catalog and stock metrics with operational inventory data.
+- Replace the demo product catalog with the operational catalog and verify stock opening balances.
 - Add a fulfillment workflow for paid orders.
 - Review the تومان-to-USD pricing strategy with the payment provider before going live.
 

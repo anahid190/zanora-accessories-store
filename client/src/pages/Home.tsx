@@ -10,6 +10,7 @@ import {
   Search,
   ShoppingBag,
   Sparkles,
+  UserRound,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -68,7 +69,7 @@ export default function Home() {
         <a className="wordmark" href="#top" aria-label="Zanora"><span>Z</span>anora</a>
         <div className="header-actions">
           <button className="icon-button desktop-only" aria-label="جستجو"><Search size={20} /></button>
-          <a className="bag-button" href="/cart" aria-label="سبد خرید"><ShoppingBag size={20} /><span>{cartCount}</span></a>
+          <a className="icon-button" href="/account" aria-label="حساب کاربری"><UserRound size={19} /></a><a className="bag-button" href="/cart" aria-label="سبد خرید"><ShoppingBag size={20} /><span>{cartCount}</span></a>
         </div>
       </header>
 

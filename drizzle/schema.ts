@@ -18,12 +18,17 @@ export const orders = mysqlTable("orders", {
   status: mysqlEnum("status", ["pending", "paid", "failed", "canceled"]).default("pending").notNull(),
   stripeCheckoutSessionId: varchar("stripeCheckoutSessionId", { length: 255 }).unique(),
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+  subtotalAmount: int("subtotalAmount").notNull().default(0),
+  discountAmount: int("discountAmount").notNull().default(0),
+  shippingAmount: int("shippingAmount").notNull().default(0),
+  discountCode: varchar("discountCode", { length: 64 }),
   amountTotal: int("amountTotal").notNull(),
   currency: varchar("currency", { length: 8 }).notNull().default("usd"),
   customerEmail: varchar("customerEmail", { length: 320 }),
   customerName: text("customerName"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  reservationExpiresAt: timestamp("reservationExpiresAt"),
 });
 
 export const orderItems = mysqlTable("orderItems", {
@@ -46,6 +51,7 @@ export const inventory = mysqlTable("inventory", {
   productId: int("productId").notNull().unique(),
   productName: varchar("productName", { length: 255 }).notNull(),
   stock: int("stock").notNull().default(0),
+  reservedStock: int("reservedStock").notNull().default(0),
   lowStockThreshold: int("lowStockThreshold").notNull().default(5),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -75,6 +81,20 @@ export const productReviews = mysqlTable("productReviews", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+export const customerAddresses = mysqlTable("customerAddresses", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  recipient: varchar("recipient", { length: 160 }).notNull(),
+  phone: varchar("phone", { length: 32 }).notNull(),
+  province: varchar("province", { length: 80 }).notNull(),
+  city: varchar("city", { length: 80 }).notNull(),
+  address: text("address").notNull(),
+  postalCode: varchar("postalCode", { length: 32 }).notNull(),
+  isDefault: int("isDefault").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Order = typeof orders.$inferSelect;
@@ -82,3 +102,4 @@ export type OrderItem = typeof orderItems.$inferSelect;
 export type Inventory = typeof inventory.$inferSelect;
 export type Discount = typeof discounts.$inferSelect;
 export type ProductReview = typeof productReviews.$inferSelect;
+export type CustomerAddress = typeof customerAddresses.$inferSelect;
