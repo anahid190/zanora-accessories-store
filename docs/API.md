@@ -330,25 +330,40 @@ For a separately published mobile repository, generate or copy a stable API type
 
 ### Protected and admin access
 
-The current backend does **not** expose a bearer-token login endpoint. Protected calls depend on the browser session cookie issued by the Manus OAuth callback. A native app therefore needs one of these approaches:
+The backend now supports a native OAuth bridge:
 
-1. Use a browser-based OAuth session and a cookie jar that can persist and send `webdev_app_session` to the API. This is technically possible but is not yet a polished native authentication flow.
-2. Add a mobile authentication bridge: native deep-link callback, short-lived access token, refresh token rotation, and server-side bearer-token verification.
-3. Keep admin operations in the web admin panel instead of exposing them to the mobile app.
+1. Open `GET /api/oauth/mobile/start?redirectUri=zanora://oauth/callback` in the system browser. The URI must be present in the server's `MOBILE_REDIRECT_URIS` allowlist.
+2. Complete Manus OAuth. The callback redirects to the native URI with a short-lived one-time `code`.
+3. Exchange the code:
+
+```http
+POST /api/oauth/mobile/exchange
+Content-Type: application/json
+
+{"code":"ONE_TIME_CODE"}
+```
+
+The response contains a 30-day signed session token:
+
+```json
+{"accessToken":"...","tokenType":"Bearer","expiresIn":2592000}
+```
+
+Send it on tRPC calls with `Authorization: Bearer {accessToken}`. The same token supports customer procedures and, for an authenticated admin, admin procedures.
+
+The server also supports an explicit CORS allowlist through `APP_CORS_ORIGINS`, request IDs through `x-request-id`, and a basic per-IP rate limit for tRPC and mobile OAuth endpoints.
 
 Do not put `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `DATABASE_URL`, Manus private keys, or any admin credential in the mobile bundle.
 
 ## Mobile readiness gaps
 
-Before using this backend as a production mobile API, address these items:
+Remaining production mobile work:
 
-- Add an explicit CORS allowlist for the mobile/web origins. The current Express entry point does not register CORS middleware.
-- Add native OAuth redirect URIs and a mobile token exchange or use a supported Manus mobile authentication flow.
 - Add access-token expiry, refresh-token rotation, revocation, and device/session management.
-- Add API versioning, rate limiting, request IDs, and structured error envelopes.
+- Add API versioning and structured error envelopes.
 - Add delivery/fulfillment status and carrier integrations after payment.
 - Consider a REST/OpenAPI facade if the mobile team does not want to adopt tRPC.
 
 ## Recommended mobile rollout
 
-For a first mobile release, expose public catalog/review reads and authenticated customer features first. Keep admin mutations behind a separate admin application or a distinct admin-scoped token. After mobile auth and CORS are added, use the same `AppRouter` procedures for checkout and order history, and keep all Stripe secret operations on the server.
+For a first mobile release, expose public catalog/review reads and authenticated customer features first. Keep admin mutations behind a separate admin application and do not distribute owner credentials in the app. Use the same `AppRouter` procedures for checkout and order history, and keep all Stripe secret operations on the server.

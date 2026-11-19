@@ -35,8 +35,15 @@
 - [x] ورود امن پنل با Manus OAuth و کنترل `adminProcedure` سمت سرور.
 - [x] خروج امن با پاک‌سازی نشست و نمایش گیت دسترسی برای کاربران غیرمدیر.
 - [x] اتصال نمای کلی داشبورد به KPIهای واقعی، سفارش‌های اخیر و هشدارهای موجودی.
+- [x] مدیریت وضعیت آماده‌سازی، ارسال، تحویل و مرجوعی سفارش‌ها.
+- [x] ثبت و نمایش کد رهگیری مرسوله برای ادمین و مشتری.
+- [x] احراز هویت موبایل با OAuth deep link، کد یک‌بارمصرف و Bearer Token.
+- [x] CORS allowlist، rate limit پایه، request ID و security headers برای API.
 
 ## Documentation and demo
 - [x] README انگلیسی با setup، architecture، environment variables و production checklist.
 - [x] راهنمای اجرای سناریوی دمو در `docs/DEMO.md`.
 - [x] لینک دمو در README.
+- [x] مستندات API ادمین و راهنمای اتصال اپ موبایل.
+- [ ] refresh token، لغو توکن و مدیریت نشست چنددستگاهی.
+- [ ] اتصال شرکت حمل‌ونقل، برچسب ارسال، refund و اعلان وضعیت سفارش.

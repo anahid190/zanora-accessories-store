@@ -1,4 +1,5 @@
 import "dotenv/config";
+import crypto from "node:crypto";
 import express from "express";
 import { createServer } from "http";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -12,6 +13,10 @@ import { handleStripeWebhook } from "../stripe";
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  const allowedOrigins = new Set((process.env.APP_CORS_ORIGINS || "").split(",").map((origin) => origin.trim()).filter(Boolean));
+  const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+  app.use((req, res, next) => { const requestId = req.header("x-request-id") || crypto.randomUUID(); res.setHeader("x-request-id", requestId); res.setHeader("X-Content-Type-Options", "nosniff"); res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin"); res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()"); const origin = req.header("origin"); if (origin && allowedOrigins.has(origin)) { res.setHeader("Access-Control-Allow-Origin", origin); res.setHeader("Access-Control-Allow-Credentials", "true"); res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-Request-Id"); res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); res.setHeader("Vary", "Origin"); } if (req.method === "OPTIONS" && origin && allowedOrigins.has(origin)) { res.status(204).end(); return; } next(); });
+  app.use((req, res, next) => { if (!req.path.startsWith("/api/trpc") && !req.path.startsWith("/api/oauth/mobile")) return next(); const now = Date.now(); const key = `${req.ip}:${req.path}`; const bucket = rateBuckets.get(key); if (!bucket || bucket.resetAt <= now) rateBuckets.set(key, { count: 1, resetAt: now + 60_000 }); else { bucket.count += 1; if (bucket.count > 120) { res.status(429).json({ error: "Too many requests", retryAfterSeconds: Math.ceil((bucket.resetAt - now) / 1000) }); return; } } next(); });
   app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

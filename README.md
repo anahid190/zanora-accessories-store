@@ -107,6 +107,9 @@ OWNER_OPEN_ID=your-owner-open-id
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+APP_CORS_ORIGINS=https://app.example.com,https://admin.example.com
+MOBILE_REDIRECT_URIS=zanora://oauth/callback
+PUBLIC_APP_ORIGIN=https://shop.example.com
 ```
 
 Never commit real secrets. Stripe secrets are consumed only by the server; card numbers, CVCs, and expiry dates are never stored by the application.
@@ -152,6 +155,7 @@ docs/API.md             Admin API contract and mobile integration guide
 - Replace the demo product catalog with the operational catalog and verify stock opening balances.
 - Add a fulfillment workflow for paid orders.
 - Review the تومان-to-USD pricing strategy with the payment provider before going live.
+- Register production mobile redirect URIs and configure `APP_CORS_ORIGINS` with an explicit allowlist.
 
 ## License
 

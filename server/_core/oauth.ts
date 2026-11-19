@@ -1,16 +1,39 @@
-import { COOKIE_NAME, ONE_YEAR_MS, OAUTH_STATE_COOKIE, decodeOAuthState } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS, OAUTH_STATE_COOKIE, decodeOAuthState, encodeOAuthState } from "@shared/const";
+import crypto from "node:crypto";
 import { parse as parseCookieHeader } from "cookie";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { ENV } from "./env";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
   return typeof value === "string" ? value : undefined;
 }
 
+function isAllowedMobileRedirect(redirectUri: string) {
+  const configured = (process.env.MOBILE_REDIRECT_URIS || "zanora://oauth/callback").split(",").map((value) => value.trim()).filter(Boolean);
+  return configured.includes(redirectUri);
+}
+
 export function registerOAuthRoutes(app: Express) {
+  app.get("/api/oauth/mobile/start", (req: Request, res: Response) => {
+    const redirectUri = getQueryParam(req, "redirectUri");
+    if (!redirectUri || !isAllowedMobileRedirect(redirectUri)) { res.status(400).json({ error: "A registered mobile redirectUri is required" }); return; }
+    const nonce = crypto.randomUUID();
+    res.cookie(OAUTH_STATE_COOKIE, nonce, { path: "/", maxAge: 600_000, httpOnly: true, secure: true, sameSite: "none" });
+    const state = encodeOAuthState({ redirectUri, nonce });
+    const forwardedProto = req.header("x-forwarded-proto")?.split(",")[0]?.trim() || req.protocol; const publicOrigin = process.env.PUBLIC_APP_ORIGIN || `${forwardedProto}://${req.get("host")}`; const url = new URL(`${ENV.oAuthServerUrl}/app-auth`); url.searchParams.set("appId", ENV.appId); url.searchParams.set("redirectUri", `${publicOrigin.replace(/\/$/, "")}/api/oauth/callback`); url.searchParams.set("state", state); url.searchParams.set("responseType", "code");
+    res.redirect(302, url.toString());
+  });
+
+  app.post("/api/oauth/mobile/exchange", async (req: Request, res: Response) => {
+    const code = typeof req.body?.code === "string" ? req.body.code : "";
+    if (!code) { res.status(400).json({ error: "code is required" }); return; }
+    try { const openId = await db.consumeMobileAuthCode(code); if (!openId) { res.status(400).json({ error: "Invalid or expired mobile auth code" }); return; } const user = await db.getUserByOpenId(openId); if (!user) { res.status(401).json({ error: "User not found" }); return; } const accessToken = await sdk.createSessionToken(openId, { name: user.name || "", expiresInMs: 30 * 24 * 60 * 60 * 1000 }); res.json({ accessToken, tokenType: "Bearer", expiresIn: 30 * 24 * 60 * 60 }); } catch (error) { console.error("[OAuth] Mobile exchange failed", error instanceof Error ? error.message : "unknown error"); res.status(500).json({ error: "Mobile authentication failed" }); }
+  });
+
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
@@ -52,6 +75,12 @@ export function registerOAuthRoutes(app: Express) {
         name: userInfo.name || "",
         expiresInMs: ONE_YEAR_MS,
       });
+
+      const redirectUri = decodeOAuthState(state).redirectUri;
+      if (isAllowedMobileRedirect(redirectUri)) {
+        const mobileCode = await db.createMobileAuthCode(userInfo.openId);
+        const mobileRedirect = new URL(redirectUri); mobileRedirect.searchParams.set("code", mobileCode); res.redirect(302, mobileRedirect.toString()); return;
+      }
 
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });

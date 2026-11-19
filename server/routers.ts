@@ -1,6 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
-import { createCustomerAddress, createDiscount, createProductReview, deleteCustomerAddress, deleteDiscount, getAdminDashboardSummary, getSalesReport, hasPurchasedProduct, listCustomerAddresses, listDiscounts, listInventory, listOrdersForUser, listProductReviews, setDefaultAddress, toggleDiscount, updateInventory, updateUserProfile } from "./db";
+import { createCustomerAddress, createDiscount, createProductReview, deleteCustomerAddress, deleteDiscount, getAdminDashboardSummary, getSalesReport, hasPurchasedProduct, listCustomerAddresses, listDiscounts, listInventory, listOrdersForAdmin, listOrdersForUser, listProductReviews, setDefaultAddress, toggleDiscount, updateFulfillment, updateInventory, updateUserProfile } from "./db";
 import { createCheckoutSession, getCheckoutQuote } from "./stripe";
 import { products } from "../client/src/data/products";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -47,6 +47,8 @@ export const appRouter = router({
   }),
   orders: router({
     mine: protectedProcedure.query(({ ctx }) => listOrdersForUser(ctx.user.id)),
+    adminList: adminProcedure.query(() => listOrdersForAdmin()),
+    updateFulfillment: adminProcedure.input(z.object({ orderId: z.number().int().positive(), fulfillmentStatus: z.enum(["unfulfilled", "processing", "shipped", "delivered", "returned"]), trackingCode: z.string().max(120).optional().nullable() })).mutation(({ input }) => updateFulfillment(input.orderId, input.fulfillmentStatus, input.trackingCode)),
   }),
   profile: router({
     update: protectedProcedure.input(z.object({ name: z.string().min(2).max(120) })).mutation(({ ctx, input }) => updateUserProfile(ctx.user.id, input)),

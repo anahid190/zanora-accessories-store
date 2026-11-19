@@ -16,6 +16,8 @@ export const orders = mysqlTable("orders", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   status: mysqlEnum("status", ["pending", "paid", "failed", "canceled"]).default("pending").notNull(),
+  fulfillmentStatus: mysqlEnum("fulfillmentStatus", ["unfulfilled", "processing", "shipped", "delivered", "returned"]).default("unfulfilled").notNull(),
+  trackingCode: varchar("trackingCode", { length: 120 }),
   stripeCheckoutSessionId: varchar("stripeCheckoutSessionId", { length: 255 }).unique(),
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
   subtotalAmount: int("subtotalAmount").notNull().default(0),
@@ -93,6 +95,14 @@ export const customerAddresses = mysqlTable("customerAddresses", {
   isDefault: int("isDefault").notNull().default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const mobileAuthCodes = mysqlTable("mobileAuthCodes", {
+  codeHash: varchar("codeHash", { length: 64 }).primaryKey(),
+  openId: varchar("openId", { length: 64 }).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  usedAt: timestamp("usedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type User = typeof users.$inferSelect;

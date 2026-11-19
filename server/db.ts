@@ -1,6 +1,7 @@
+import crypto from "node:crypto";
 import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { customerAddresses, discounts, inventory, InsertUser, orderItems, orders, processedStripeEvents, productReviews, users } from "../drizzle/schema";
+import { customerAddresses, discounts, inventory, InsertUser, mobileAuthCodes, orderItems, orders, processedStripeEvents, productReviews, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -24,6 +25,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 }
 
 export async function getUserByOpenId(openId: string) { const db = await getDb(); if (!db) return undefined; const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1); return result[0]; }
+
+export async function createMobileAuthCode(openId: string) { const db = await getDb(); if (!db) throw new Error("Database is not available"); const rawCode = crypto.randomBytes(32).toString("hex"); const codeHash = crypto.createHash("sha256").update(rawCode).digest("hex"); await db.insert(mobileAuthCodes).values({ codeHash, openId, expiresAt: new Date(Date.now() + 5 * 60 * 1000) }); return rawCode; }
+export async function consumeMobileAuthCode(rawCode: string) { const db = await getDb(); if (!db) throw new Error("Database is not available"); const codeHash = crypto.createHash("sha256").update(rawCode).digest("hex"); return db.transaction(async (tx) => { const record = (await tx.select().from(mobileAuthCodes).where(and(eq(mobileAuthCodes.codeHash, codeHash), sql`${mobileAuthCodes.expiresAt} > ${new Date()}`, sql`${mobileAuthCodes.usedAt} IS NULL`)).limit(1))[0]; if (!record) return null; const result = await tx.update(mobileAuthCodes).set({ usedAt: new Date() }).where(and(eq(mobileAuthCodes.codeHash, codeHash), sql`${mobileAuthCodes.usedAt} IS NULL`)); return result[0]?.affectedRows ? record.openId : null; }); }
 
 async function releaseOrderReservation(tx: any, orderId: number) {
   const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId));
@@ -63,6 +67,8 @@ export async function markOrderPaid(orderId: number, paymentIntentId?: string | 
 export async function markOrderFailed(orderId: number, paymentIntentId?: string | null) { const db = await getDb(); if (!db) throw new Error("Database is not available"); await db.transaction(async (tx) => { const order = (await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1))[0]; if (!order || order.status !== "pending") return; await releaseOrderReservation(tx, orderId); await tx.update(orders).set({ status: "failed", stripePaymentIntentId: paymentIntentId ?? null, reservationExpiresAt: null }).where(eq(orders.id, orderId)); }); }
 
 export async function listOrdersForUser(userId: number) { const db = await getDb(); if (!db) throw new Error("Database is not available"); const result = await db.select().from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt)); const ids = result.map((order) => order.id); const items = ids.length ? await db.select().from(orderItems).where(inArray(orderItems.orderId, ids)) : []; return result.map((order) => ({ ...order, items: items.filter((item) => item.orderId === order.id) })); }
+export async function listOrdersForAdmin() { const db = await getDb(); if (!db) throw new Error("Database is not available"); return db.select().from(orders).orderBy(desc(orders.createdAt)).limit(100); }
+export async function updateFulfillment(orderId: number, fulfillmentStatus: "unfulfilled" | "processing" | "shipped" | "delivered" | "returned", trackingCode?: string | null) { const db = await getDb(); if (!db) throw new Error("Database is not available"); await db.update(orders).set({ fulfillmentStatus, trackingCode: trackingCode?.trim() || null }).where(eq(orders.id, orderId)); return (await db.select().from(orders).where(eq(orders.id, orderId)).limit(1))[0]; }
 export async function hasProcessedStripeEvent(eventId: string) { const db = await getDb(); if (!db) throw new Error("Database is not available"); const result = await db.select({ eventId: processedStripeEvents.eventId }).from(processedStripeEvents).where(eq(processedStripeEvents.eventId, eventId)).limit(1); return result.length > 0; }
 export async function recordStripeEvent(eventId: string, eventType: string) { const db = await getDb(); if (!db) throw new Error("Database is not available"); await db.insert(processedStripeEvents).values({ eventId, eventType }).onDuplicateKeyUpdate({ set: { eventType } }); }
 
