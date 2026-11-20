@@ -1,8 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
-import { createCustomerAddress, createDiscount, createProductReview, deleteCustomerAddress, deleteDiscount, getAdminDashboardSummary, getSalesReport, hasPurchasedProduct, listCustomerAddresses, listDiscounts, listInventory, listOrdersForAdmin, listOrdersForUser, listProductReviews, setDefaultAddress, toggleDiscount, updateFulfillment, updateInventory, updateUserProfile } from "./db";
+import { archiveCatalogProduct, createCatalogProduct, createCustomerAddress, createDiscount, createProductReview, deleteCustomerAddress, deleteDiscount, getAdminDashboardSummary, getCatalogProduct, getSalesReport, hasPurchasedProduct, listCatalogProducts, listCustomerAddresses, listDiscounts, listInventory, listOrdersForAdmin, listOrdersForUser, listProductReviews, setDefaultAddress, toggleDiscount, updateCatalogProduct, updateFulfillment, updateInventory, updateUserProfile } from "./db";
 import { createCheckoutSession, getCheckoutQuote } from "./stripe";
-import { products } from "../client/src/data/products";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -18,10 +17,10 @@ export const appRouter = router({
     }),
   }),
   admin: router({
-    dashboard: adminProcedure.query(async ({ ctx }) => { await listInventory(products.map(({ id, name }) => ({ id, name }))); return { user: { id: ctx.user.id, name: ctx.user.name, email: ctx.user.email, role: ctx.user.role }, message: "Admin access verified", summary: await getAdminDashboardSummary() }; }),
+    dashboard: adminProcedure.query(async ({ ctx }) => { const catalog = await listCatalogProducts(); await listInventory(catalog.map(({ id, name }) => ({ id, name }))); return { user: { id: ctx.user.id, name: ctx.user.name, email: ctx.user.email, role: ctx.user.role }, message: "Admin access verified", summary: await getAdminDashboardSummary() }; }),
   }),
   inventory: router({
-    list: adminProcedure.query(() => listInventory(products.map(({ id, name }) => ({ id, name })))),
+    list: adminProcedure.query(async () => { const catalog = await listCatalogProducts(); return listInventory(catalog.map(({ id, name }) => ({ id, name }))); }),
     update: adminProcedure.input(z.object({ productId: z.number().int().positive(), stock: z.number().int().min(0).max(100000), lowStockThreshold: z.number().int().min(0).max(100000) })).mutation(({ input }) => updateInventory(input.productId, input.stock, input.lowStockThreshold)),
   }),
   discounts: router({
@@ -31,11 +30,19 @@ export const appRouter = router({
     remove: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => deleteDiscount(input.id)),
   }),
   reports: router({
-    sales: adminProcedure.input(z.object({ days: z.number().int().min(7).max(90).default(30) }).optional()).query(async ({ input }) => { await listInventory(products.map(({ id, name }) => ({ id, name }))); return getSalesReport(input?.days ?? 30); }),
+    sales: adminProcedure.input(z.object({ days: z.number().int().min(7).max(90).default(30) }).optional()).query(async ({ input }) => { const catalog = await listCatalogProducts(); await listInventory(catalog.map(({ id, name }) => ({ id, name }))); return getSalesReport(input?.days ?? 30); }),
   }),
   reviews: router({
     list: publicProcedure.input(z.object({ productId: z.number().int().positive() })).query(({ input }) => listProductReviews(input.productId)),
     create: protectedProcedure.input(z.object({ productId: z.number().int().positive(), rating: z.number().int().min(1).max(5), title: z.string().max(160).optional().nullable(), body: z.string().min(10).max(2000) })).mutation(async ({ ctx, input }) => { if (!(await hasPurchasedProduct(ctx.user.id, input.productId))) throw new Error("ثبت نظر فقط پس از خرید و پرداخت محصول امکان‌پذیر است"); return createProductReview({ ...input, userId: ctx.user.id }); }),
+  }),
+  catalog: router({
+    list: publicProcedure.query(() => listCatalogProducts()),
+    get: publicProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input }) => getCatalogProduct(input.id)),
+    adminList: adminProcedure.query(() => listCatalogProducts(true)),
+    create: adminProcedure.input(z.object({ name: z.string().min(2).max(255), category: z.string().min(2).max(80), priceValue: z.number().int().positive(), image: z.string().url(), gallery: z.array(z.string().url()).max(8), badge: z.string().max(80).optional().nullable(), description: z.string().min(10).max(4000) })).mutation(({ input }) => createCatalogProduct(input)),
+    update: adminProcedure.input(z.object({ id: z.number().int().positive(), name: z.string().min(2).max(255), category: z.string().min(2).max(80), priceValue: z.number().int().positive(), image: z.string().url(), gallery: z.array(z.string().url()).max(8), badge: z.string().max(80).optional().nullable(), description: z.string().min(10).max(4000) })).mutation(({ input }) => { const { id, ...product } = input; return updateCatalogProduct(id, product); }),
+    archive: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => archiveCatalogProduct(input.id)),
   }),
   checkout: router({
     quote: protectedProcedure.input(z.object({ items: z.array(z.object({ productId: z.number().int().positive(), quantity: z.number().int().positive().max(10) })).min(1), discountCode: z.string().max(64).optional().nullable() })).mutation(({ input }) => getCheckoutQuote(input)),

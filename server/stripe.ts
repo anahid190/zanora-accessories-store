@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
 import type { Request, Response } from "express";
-import { products } from "../client/src/data/products";
 import * as db from "./db";
 import type { AuthenticatedUser } from "./_core/sdk";
 
@@ -9,10 +8,10 @@ const TOMAN_PER_USD = 100_000;
 const toStripeCents = (toman: number) => Math.max(50, Math.round(toman / (TOMAN_PER_USD / 100)));
 
 function getSafeOrigin(requestOrigin: string | undefined, req: Request) { const candidate = requestOrigin || req.headers.origin; if (!candidate || !/^https:\/\//i.test(candidate)) throw new Error("A browser-visible HTTPS origin is required"); return candidate.replace(/\/$/, ""); }
-function getRequestedItems(items: Array<{ productId: number; quantity: number }>) { const requested = items.map((item) => ({ product: products.find((product) => product.id === item.productId), quantity: Math.min(10, Math.max(1, Math.floor(item.quantity))) })).filter((item): item is { product: typeof products[number]; quantity: number } => Boolean(item.product)); if (!requested.length) throw new Error("Cart is empty"); return requested; }
+async function getRequestedItems(items: Array<{ productId: number; quantity: number }>) { const catalog = await db.listCatalogProducts(); const requested = items.map((item) => ({ product: catalog.find((product) => product.id === item.productId), quantity: Math.min(10, Math.max(1, Math.floor(item.quantity))) })).filter((item): item is { product: (typeof catalog)[number]; quantity: number } => Boolean(item.product)); if (!requested.length) throw new Error("Cart is empty"); return requested; }
 
 export async function getCheckoutQuote(input: { items: Array<{ productId: number; quantity: number }>; discountCode?: string | null }) {
-  const requested = getRequestedItems(input.items); const subtotalAmount = requested.reduce((sum, item) => sum + item.product.priceValue * item.quantity, 0); const discount = input.discountCode?.trim() ? await db.validateDiscount(input.discountCode, subtotalAmount) : null; const discountAmount = discount?.discountAmount || 0; const shippingAmount = subtotalAmount - discountAmount >= 2_000_000 ? 0 : 85_000; const amountTotal = Math.max(0, subtotalAmount - discountAmount + shippingAmount); return { requested, subtotalAmount, discountAmount, shippingAmount, amountTotal, discountCode: discount?.code || null };
+  const requested = await getRequestedItems(input.items); const subtotalAmount = requested.reduce((sum, item) => sum + item.product.priceValue * item.quantity, 0); const discount = input.discountCode?.trim() ? await db.validateDiscount(input.discountCode, subtotalAmount) : null; const discountAmount = discount?.discountAmount || 0; const shippingAmount = subtotalAmount - discountAmount >= 2_000_000 ? 0 : 85_000; const amountTotal = Math.max(0, subtotalAmount - discountAmount + shippingAmount); return { requested, subtotalAmount, discountAmount, shippingAmount, amountTotal, discountCode: discount?.code || null };
 }
 
 export async function createCheckoutSession(input: { origin: string; addressId: number; items: Array<{ productId: number; quantity: number }>; discountCode?: string | null }, user: AuthenticatedUser, req: Request) {

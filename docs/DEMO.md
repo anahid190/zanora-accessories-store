@@ -52,6 +52,10 @@ Visit `/admin`. The page stays logged out until Manus OAuth succeeds. The server
 
 Open **موجودی** to edit each product's physical stock quantity and low-stock threshold. The values are persisted in the `inventory` table. The panel also shows active reservations and available-to-sell stock. Physical stock cannot be edited below the currently reserved quantity.
 
+### Product catalog
+
+Open **محصولات** to create or edit catalog products. The editor stores the name, category, Toman price, badge, description, primary image, and additional gallery URLs in `catalogProducts`. Archiving hides a product from the public catalog without deleting historical order references. The storefront reads active products through `catalog.list`.
+
 ### Discounts
 
 Open **تخفیف‌ها** to create percentage or fixed-value discount records. Each discount supports an optional minimum order amount, optional expiry date, and active/stopped state. Codes are normalized to uppercase and validated on the server.

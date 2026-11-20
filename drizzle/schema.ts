@@ -111,6 +111,20 @@ export const mobileAuthCodes = mysqlTable("mobileAuthCodes", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const catalogProducts = mysqlTable("catalogProducts", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: varchar("category", { length: 80 }).notNull(),
+  priceValue: int("priceValue").notNull(),
+  image: text("image").notNull(),
+  gallery: text("gallery"),
+  badge: varchar("badge", { length: 80 }),
+  description: text("description").notNull(),
+  isActive: int("isActive").notNull().default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Order = typeof orders.$inferSelect;
@@ -119,3 +133,4 @@ export type Inventory = typeof inventory.$inferSelect;
 export type Discount = typeof discounts.$inferSelect;
 export type ProductReview = typeof productReviews.$inferSelect;
 export type CustomerAddress = typeof customerAddresses.$inferSelect;
+export type CatalogProduct = typeof catalogProducts.$inferSelect;

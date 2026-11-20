@@ -193,6 +193,19 @@ input: none
 
 Although the route is public, it clears the current session cookie. It should be called on logout from both web and any cookie-capable client.
 
+### Product catalog
+
+```text
+catalog.list — public query
+catalog.get — public query, input: { id: positive integer }
+catalog.adminList — admin query
+catalog.create — admin mutation
+catalog.update — admin mutation, input includes id, name, category, priceValue, image, gallery[], badge, description
+catalog.archive — admin mutation, input: { id: positive integer }
+```
+
+The catalog is seeded from the initial product set on first access. Public queries return only active products. Admin archive is a soft archive: it hides the product from the storefront while preserving its numeric ID for historical order items.
+
 ## Customer and public API contract
 
 ### Current session

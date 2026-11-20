@@ -28,6 +28,7 @@ API and mobile integration documentation is available in [`docs/API.md`](docs/AP
 - Advanced category filters for earrings, necklaces, bracelets, and bags
 - Price-range filters and newest/lowest/highest price sorting
 - Product details with gallery, quantity selection, color selection, and add-to-cart
+- Database-backed product catalog with admin create, edit, archive, descriptions, badges, and multi-image galleries
 - Cart state persisted in browser `localStorage`
 
 ### Checkout and orders
@@ -127,7 +128,7 @@ The Stripe webhook endpoint is `/api/stripe/webhook`. It rejects unsigned or sta
 
 ## Database
 
-The schema is in `drizzle/schema.ts`. The current migrations create `users`, `orders`, `orderItems`, `processedStripeEvents`, `inventory`, `discounts`, `productReviews`, and `customerAddresses`.
+The schema is in `drizzle/schema.ts`. The current migrations create `users`, `orders`, `orderItems`, `processedStripeEvents`, `inventory`, `discounts`, `productReviews`, `customerAddresses`, `mobileAuthCodes`, and `catalogProducts`.
 
 Generate and apply migrations with:
 

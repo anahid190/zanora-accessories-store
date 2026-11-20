@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, ChevronDown, Heart, Minus, Plus, ShoppingBag, Truck } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
-import { products } from "@/data/products";
+import { products, type Product } from "@/data/products";
 import { useStore } from "@/contexts/StoreContext";
 import ReviewSection from "@/components/ReviewSection";
 import { trpc } from "@/lib/trpc";
@@ -15,7 +15,8 @@ export default function ProductPage() {
   const [activeThumb, setActiveThumb] = useState(0);
   const [openInfo, setOpenInfo] = useState<string | null>("جزئیات محصول");
   const { cartCount, addToCart } = useStore();
-  const product = useMemo(() => products.find((item) => item.id === Number(params?.id)), [params?.id]);
+  const catalog = trpc.catalog.list.useQuery();
+  const product = useMemo(() => { const item = catalog.data?.find((candidate) => candidate.id === Number(params?.id)); return item ? { ...item, category: item.category as Product["category"], badge: item.badge ?? undefined } : products.find((item) => item.id === Number(params?.id)); }, [catalog.data, params?.id]);
   const reviewSummary = trpc.reviews.list.useQuery({ productId: product?.id ?? 0 }, { enabled: Boolean(product) });
 
   useEffect(() => {
