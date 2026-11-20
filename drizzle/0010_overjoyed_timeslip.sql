@@ -1,0 +1,1 @@
+ALTER TABLE `orders` ADD `reservationStatus` enum('active','released','converted') DEFAULT 'active' NOT NULL;

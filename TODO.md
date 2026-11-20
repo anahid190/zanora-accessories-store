@@ -42,6 +42,7 @@
 - [x] ثبت و نمایش کد رهگیری مرسوله برای ادمین و مشتری.
 - [x] احراز هویت موبایل با OAuth deep link، کد یک‌بارمصرف و Bearer Token.
 - [x] CORS allowlist، rate limit پایه، request ID و security headers برای API.
+- [x] آزادسازی خودکار رزروهای منقضی با job دوره‌ای ۶۰ ثانیه‌ای، وضعیت مستقل reservation و webhook انقضای Checkout.
 
 ## Documentation and demo
 - [x] README انگلیسی با setup، architecture، environment variables و production checklist.

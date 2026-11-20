@@ -39,6 +39,7 @@ export const orders = mysqlTable("orders", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   reservationExpiresAt: timestamp("reservationExpiresAt"),
+  reservationStatus: mysqlEnum("reservationStatus", ["active", "released", "converted"]).default("active").notNull(),
   refundStatus: mysqlEnum("refundStatus", ["none", "pending", "partial", "refunded", "failed"]).default("none").notNull(),
   refundedAmount: int("refundedAmount").notNull().default(0),
   stripeRefundId: varchar("stripeRefundId", { length: 255 }),

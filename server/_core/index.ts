@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { handleStripeWebhook } from "../stripe";
+import { releaseExpiredReservations } from "../db";
 
 async function startServer() {
   const app = express();
@@ -44,6 +45,9 @@ async function startServer() {
   const port = Number(process.env.PORT || "3000");
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("Invalid PORT");
   server.on("error", error => { console.error("Server failed:", error.message); process.exit(1); });
+  void releaseExpiredReservations().catch((error) => console.warn("[Reservations] Initial sweep failed:", error instanceof Error ? error.message : "unknown error"));
+  const reservationSweep = setInterval(() => { void releaseExpiredReservations().catch((error) => console.warn("[Reservations] Sweep failed:", error instanceof Error ? error.message : "unknown error")); }, 60_000);
+  reservationSweep.unref();
   server.listen(port, "0.0.0.0", () => console.log(`Server listening on port ${port}`));
 }
 
