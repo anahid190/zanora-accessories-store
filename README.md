@@ -59,6 +59,7 @@ The storefront displays prices in Iranian تومان. Stripe Checkout uses a tes
 - Discount management for percentage or fixed discounts, minimum order amounts, expiry dates, and activation state
 - Sales reporting for paid orders, daily revenue, average order value, top products, and inventory health
 - Product reviews and five-star ratings, with verified-purchase enforcement before publishing
+- Mobile OAuth sessions with short-lived access tokens, rotating refresh tokens, revoke, and multi-device session management
 
 ## Tech stack
 
@@ -128,7 +129,7 @@ The Stripe webhook endpoint is `/api/stripe/webhook`. It rejects unsigned or sta
 
 ## Database
 
-The schema is in `drizzle/schema.ts`. The current migrations create `users`, `orders`, `orderItems`, `processedStripeEvents`, `inventory`, `discounts`, `productReviews`, `customerAddresses`, `mobileAuthCodes`, and `catalogProducts`.
+The schema is in `drizzle/schema.ts`. The current migrations create `users`, `orders`, `orderItems`, `processedStripeEvents`, `inventory`, `discounts`, `productReviews`, `customerAddresses`, `mobileAuthCodes`, `authSessions`, and `catalogProducts`.
 
 Generate and apply migrations with:
 

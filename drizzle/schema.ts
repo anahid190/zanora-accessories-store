@@ -111,6 +111,18 @@ export const mobileAuthCodes = mysqlTable("mobileAuthCodes", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const authSessions = mysqlTable("authSessions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 64 }).notNull().unique(),
+  openId: varchar("openId", { length: 64 }).notNull(),
+  refreshTokenHash: varchar("refreshTokenHash", { length: 64 }).notNull().unique(),
+  userAgent: varchar("userAgent", { length: 500 }),
+  expiresAt: timestamp("expiresAt").notNull(),
+  revokedAt: timestamp("revokedAt"),
+  lastUsedAt: timestamp("lastUsedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export const catalogProducts = mysqlTable("catalogProducts", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -134,3 +146,4 @@ export type Discount = typeof discounts.$inferSelect;
 export type ProductReview = typeof productReviews.$inferSelect;
 export type CustomerAddress = typeof customerAddresses.$inferSelect;
 export type CatalogProduct = typeof catalogProducts.$inferSelect;
+export type AuthSession = typeof authSessions.$inferSelect;

@@ -31,8 +31,18 @@ export function registerOAuthRoutes(app: Express) {
   app.post("/api/oauth/mobile/exchange", async (req: Request, res: Response) => {
     const code = typeof req.body?.code === "string" ? req.body.code : "";
     if (!code) { res.status(400).json({ error: "code is required" }); return; }
-    try { const openId = await db.consumeMobileAuthCode(code); if (!openId) { res.status(400).json({ error: "Invalid or expired mobile auth code" }); return; } const user = await db.getUserByOpenId(openId); if (!user) { res.status(401).json({ error: "User not found" }); return; } const accessToken = await sdk.createSessionToken(openId, { name: user.name || "", expiresInMs: 30 * 24 * 60 * 60 * 1000 }); res.json({ accessToken, tokenType: "Bearer", expiresIn: 30 * 24 * 60 * 60 }); } catch (error) { console.error("[OAuth] Mobile exchange failed", error instanceof Error ? error.message : "unknown error"); res.status(500).json({ error: "Mobile authentication failed" }); }
+    try { const openId = await db.consumeMobileAuthCode(code); if (!openId) { res.status(400).json({ error: "Invalid or expired mobile auth code" }); return; } const user = await db.getUserByOpenId(openId); if (!user) { res.status(401).json({ error: "User not found" }); return; } const managed = await db.createAuthSession(openId, req.header("user-agent")); const accessToken = await sdk.createSessionToken(openId, { name: user.name || "", expiresInMs: 15 * 60 * 1000, sessionId: managed.sessionId }); res.json({ accessToken, refreshToken: managed.refreshToken, tokenType: "Bearer", expiresIn: 15 * 60 }); } catch (error) { console.error("[OAuth] Mobile exchange failed", error instanceof Error ? error.message : "unknown error"); res.status(500).json({ error: "Mobile authentication failed" }); }
   });
+
+  app.post("/api/oauth/mobile/refresh", async (req: Request, res: Response) => {
+    const refreshToken = typeof req.body?.refreshToken === "string" ? req.body.refreshToken : "";
+    if (!refreshToken) { res.status(400).json({ error: "refreshToken is required" }); return; }
+    try { const rotated = await db.rotateAuthSession(refreshToken, req.header("user-agent")); if (!rotated) { res.status(401).json({ error: "Invalid, expired, or revoked refresh token" }); return; } const user = await db.getUserByOpenId(rotated.openId); if (!user) { res.status(401).json({ error: "User not found" }); return; } const accessToken = await sdk.createSessionToken(rotated.openId, { name: user.name || "", expiresInMs: 15 * 60 * 1000, sessionId: rotated.sessionId }); res.json({ accessToken, refreshToken: rotated.refreshToken, tokenType: "Bearer", expiresIn: 15 * 60 }); } catch (error) { console.error("[OAuth] Mobile refresh failed", error instanceof Error ? error.message : "unknown error"); res.status(500).json({ error: "Mobile token refresh failed" }); }
+  });
+
+  app.post("/api/oauth/mobile/revoke", async (req: Request, res: Response) => { const refreshToken = typeof req.body?.refreshToken === "string" ? req.body.refreshToken : ""; if (!refreshToken) { res.status(400).json({ error: "refreshToken is required" }); return; } await db.revokeAuthSession(refreshToken); res.json({ success: true }); });
+  app.get("/api/oauth/mobile/sessions", async (req: Request, res: Response) => { try { const user = await sdk.authenticateRequest(req); res.json({ sessions: await db.listAuthSessions(user.openId) }); } catch { res.status(401).json({ error: "Valid Bearer access token is required" }); } });
+  app.post("/api/oauth/mobile/sessions/revoke-all", async (req: Request, res: Response) => { try { const user = await sdk.authenticateRequest(req); await db.revokeAllAuthSessions(user.openId); res.json({ success: true }); } catch { res.status(401).json({ error: "Valid Bearer access token is required" }); } });
 
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");

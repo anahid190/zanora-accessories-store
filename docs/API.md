@@ -30,10 +30,10 @@ The web login flow is:
 2. The helper creates a one-time `__Host-oauth_state` nonce cookie.
 3. The browser is redirected to Manus OAuth.
 4. Manus redirects to `/api/oauth/callback?code=...&state=...`.
-5. The server verifies the state nonce, exchanges the code, upserts the user, creates a one-year session token, and sets the `webdev_app_session` cookie.
+5. The server verifies the state nonce, exchanges the code, upserts the user, creates a one-year web session token, and sets the `webdev_app_session` cookie.
 6. The browser is redirected to `/`.
 
-The session cookie is configured for HTTPS cross-site Preview embedding with `SameSite=None; Secure`. The current OAuth callback always redirects to the web root, so it is not yet a native deep-link callback.
+The session cookie is configured for HTTPS cross-site Preview embedding with `SameSite=None; Secure`. Native mobile login uses the allowlisted deep-link callback and receives a 15-minute access token plus a rotating 30-day refresh token. Mobile sessions are stored server-side and can be revoked individually through the refresh token or all at once for the user.
 
 ## HTTP endpoints
 
@@ -64,6 +64,32 @@ GET /api/oauth/callback?code={code}&state={state}
 ```
 
 This endpoint is intended for the browser OAuth flow. It verifies the one-time state cookie and sets the server session cookie. A native app should not call it directly without a mobile-specific redirect/deep-link flow.
+
+### Mobile token exchange and session management
+
+```http
+POST /api/oauth/mobile/exchange
+Content-Type: application/json
+{ "code": "one-time-code-from-deep-link" }
+```
+
+The response contains `{ accessToken, refreshToken, tokenType: "Bearer", expiresIn: 900 }`. Send the access token as `Authorization: Bearer ...` to the tRPC API. Access tokens expire after 15 minutes.
+
+```http
+POST /api/oauth/mobile/refresh
+{ "refreshToken": "..." }
+
+POST /api/oauth/mobile/revoke
+{ "refreshToken": "..." }
+
+GET /api/oauth/mobile/sessions
+Authorization: Bearer ACCESS_TOKEN
+
+POST /api/oauth/mobile/sessions/revoke-all
+Authorization: Bearer ACCESS_TOKEN
+```
+
+Refresh tokens are rotated on every successful refresh; the previous token is immediately invalid. Revoked or expired sessions are rejected even if an old access JWT has not reached its `exp` time.
 
 ### Stripe webhook
 
