@@ -219,6 +219,33 @@ input: none
 
 Although the route is public, it clears the current session cookie. It should be called on logout from both web and any cookie-capable client.
 
+### Fulfillment, shipping labels, and refunds
+
+```text
+orders.updateFulfillment — admin mutation
+input: {
+  orderId: positive integer,
+  fulfillmentStatus: "unfulfilled" | "processing" | "shipped" | "delivered" | "returned",
+  trackingCode?: string | null,
+  shippingCarrier?: string | null,
+  shippingLabelUrl?: HTTPS URL | null
+}
+
+orders.refund — admin mutation
+input: { orderId: positive integer, amountToman?: positive integer }
+```
+
+`orders.refund` only accepts paid orders with a Stripe PaymentIntent, limits the amount to the remaining refundable total, sends the refund through Stripe, and records the Stripe refund ID and partial/full status. Shipping metadata is provider-agnostic so a carrier adapter can later populate `shippingLabelUrl` automatically without changing the order contract.
+
+### Customer notifications
+
+```text
+notifications.mine — protected query
+notifications.markRead — protected mutation, input: { id: positive integer }
+```
+
+Fulfillment changes and successful refunds create database notifications scoped to the order owner. Admins cannot create notifications for another customer through the client API.
+
 ### Product catalog
 
 ```text

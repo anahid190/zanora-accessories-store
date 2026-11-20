@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
-import { archiveCatalogProduct, createCatalogProduct, createCustomerAddress, createDiscount, createProductReview, deleteCustomerAddress, deleteDiscount, getAdminDashboardSummary, getCatalogProduct, getSalesReport, hasPurchasedProduct, listCatalogProducts, listCustomerAddresses, listDiscounts, listInventory, listOrdersForAdmin, listOrdersForUser, listProductReviews, setDefaultAddress, toggleDiscount, updateCatalogProduct, updateFulfillment, updateInventory, updateUserProfile } from "./db";
-import { createCheckoutSession, getCheckoutQuote } from "./stripe";
+import { archiveCatalogProduct, createCatalogProduct, createCustomerAddress, createDiscount, createProductReview, deleteCustomerAddress, deleteDiscount, getAdminDashboardSummary, getCatalogProduct, getSalesReport, hasPurchasedProduct, listCatalogProducts, listCustomerAddresses, listDiscounts, listInventory, listNotifications, listOrdersForAdmin, listOrdersForUser, listProductReviews, markNotificationRead, setDefaultAddress, toggleDiscount, updateCatalogProduct, updateFulfillment, updateInventory, updateUserProfile } from "./db";
+import { createCheckoutSession, createStripeRefund, getCheckoutQuote } from "./stripe";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -56,7 +56,12 @@ export const appRouter = router({
   orders: router({
     mine: protectedProcedure.query(({ ctx }) => listOrdersForUser(ctx.user.id)),
     adminList: adminProcedure.query(() => listOrdersForAdmin()),
-    updateFulfillment: adminProcedure.input(z.object({ orderId: z.number().int().positive(), fulfillmentStatus: z.enum(["unfulfilled", "processing", "shipped", "delivered", "returned"]), trackingCode: z.string().max(120).optional().nullable() })).mutation(({ input }) => updateFulfillment(input.orderId, input.fulfillmentStatus, input.trackingCode)),
+    updateFulfillment: adminProcedure.input(z.object({ orderId: z.number().int().positive(), fulfillmentStatus: z.enum(["unfulfilled", "processing", "shipped", "delivered", "returned"]), trackingCode: z.string().max(120).optional().nullable(), shippingCarrier: z.string().max(120).optional().nullable(), shippingLabelUrl: z.string().url().max(2000).optional().nullable() })).mutation(({ input }) => updateFulfillment(input.orderId, input.fulfillmentStatus, input.trackingCode, input.shippingCarrier, input.shippingLabelUrl)),
+    refund: adminProcedure.input(z.object({ orderId: z.number().int().positive(), amountToman: z.number().int().positive().optional() })).mutation(({ input }) => createStripeRefund(input.orderId, input.amountToman)),
+  }),
+  notifications: router({
+    mine: protectedProcedure.query(({ ctx }) => listNotifications(ctx.user.id)),
+    markRead: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => markNotificationRead(ctx.user.id, input.id)),
   }),
   profile: router({
     update: protectedProcedure.input(z.object({ name: z.string().min(2).max(120) })).mutation(({ ctx, input }) => updateUserProfile(ctx.user.id, input)),

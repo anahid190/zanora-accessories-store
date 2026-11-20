@@ -18,6 +18,8 @@ export const orders = mysqlTable("orders", {
   status: mysqlEnum("status", ["pending", "paid", "failed", "canceled"]).default("pending").notNull(),
   fulfillmentStatus: mysqlEnum("fulfillmentStatus", ["unfulfilled", "processing", "shipped", "delivered", "returned"]).default("unfulfilled").notNull(),
   trackingCode: varchar("trackingCode", { length: 120 }),
+  shippingCarrier: varchar("shippingCarrier", { length: 120 }),
+  shippingLabelUrl: text("shippingLabelUrl"),
   stripeCheckoutSessionId: varchar("stripeCheckoutSessionId", { length: 255 }).unique(),
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
   subtotalAmount: int("subtotalAmount").notNull().default(0),
@@ -37,6 +39,9 @@ export const orders = mysqlTable("orders", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   reservationExpiresAt: timestamp("reservationExpiresAt"),
+  refundStatus: mysqlEnum("refundStatus", ["none", "pending", "partial", "refunded", "failed"]).default("none").notNull(),
+  refundedAmount: int("refundedAmount").notNull().default(0),
+  stripeRefundId: varchar("stripeRefundId", { length: 255 }),
 });
 
 export const orderItems = mysqlTable("orderItems", {
@@ -123,6 +128,17 @@ export const authSessions = mysqlTable("authSessions", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const orderNotifications = mysqlTable("orderNotifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  orderId: int("orderId"),
+  type: varchar("type", { length: 40 }).notNull(),
+  title: varchar("title", { length: 180 }).notNull(),
+  body: text("body").notNull(),
+  readAt: timestamp("readAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export const catalogProducts = mysqlTable("catalogProducts", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -147,3 +163,4 @@ export type ProductReview = typeof productReviews.$inferSelect;
 export type CustomerAddress = typeof customerAddresses.$inferSelect;
 export type CatalogProduct = typeof catalogProducts.$inferSelect;
 export type AuthSession = typeof authSessions.$inferSelect;
+export type OrderNotification = typeof orderNotifications.$inferSelect;

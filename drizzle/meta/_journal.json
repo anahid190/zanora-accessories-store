@@ -64,6 +64,13 @@
       "when": 1795151516069,
       "tag": "0008_slim_madame_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1795154551479,
+      "tag": "0009_wise_vapor",
+      "breakpoints": true
     }
   ]
 }

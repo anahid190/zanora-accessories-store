@@ -42,6 +42,7 @@ API and mobile integration documentation is available in [`docs/API.md`](docs/AP
 - Idempotent Stripe event processing
 - Payment status history in `/orders`
 - Expandable order details with items, shipping, discount, and final totals
+- Provider-agnostic fulfillment metadata, carrier tracking, shipping label links, Stripe refunds, and customer notifications
 - Customer account page at `/account` with profile and saved shipping addresses
 - Address selection during checkout with immutable order-level shipping snapshots
 
