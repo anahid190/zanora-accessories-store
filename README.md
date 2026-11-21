@@ -6,6 +6,17 @@ Zanora is a Persian, right-to-left women's accessories storefront with a refined
 
 **Live preview:** [Open the Zanora demo](https://3000-iq0q1xkaxu3y0uwesdsx3-e3aa4ebb.us3.manus.computer/)
 
+### Screenshots
+
+The repository includes current desktop and mobile captures of the storefront and product detail page:
+
+| Storefront | Product detail |
+| --- | --- |
+| ![Zanora desktop storefront](docs/screenshots/home-desktop.png) | ![Zanora desktop product detail](docs/screenshots/product-desktop.png) |
+| ![Zanora mobile storefront](docs/screenshots/home-mobile.png) | ![Zanora mobile product detail](docs/screenshots/product-mobile.png) |
+
+The [full-page storefront capture](docs/screenshots/home-full-desktop.png) shows the editorial sections, category cards, expanded product catalog, collections, newsletter, and footer in one scrollable view.
+
 Key routes:
 
 - `/` — storefront homepage with category and price filters
@@ -25,9 +36,11 @@ API and mobile integration documentation is available in [`docs/API.md`](docs/AP
 
 - Persian RTL layout with responsive desktop and mobile design
 - Editorial hero section and category cards
+- Expanded catalog with 18 curated fallback products and category-specific product photography
 - Advanced category filters for earrings, necklaces, bracelets, and bags
 - Price-range filters and newest/lowest/highest price sorting
 - Product details with gallery, quantity selection, color selection, and add-to-cart
+- Persistent wishlist and recently viewed product state in browser `localStorage`
 - Database-backed product catalog with admin create, edit, archive, descriptions, badges, and multi-image galleries
 - Cart state persisted in browser `localStorage`
 
@@ -158,6 +171,8 @@ drizzle/                Database schema and migrations
 public/                 Route manifest and brand assets
 docs/DEMO.md            Step-by-step demo walkthrough
 docs/API.md             Admin API contract and mobile integration guide
+docs/SCREENSHOTS.md     English visual demo and screenshot index
+docs/screenshots/       Desktop, mobile, and full-page PNG captures
 ```
 
 ## Production checklist

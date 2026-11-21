@@ -2,6 +2,10 @@
 
 The live preview is available from the project Preview panel. The same application exposes the following page routes:
 
+The storefront currently ships with an 18-product curated fallback catalog covering earrings, necklaces, bracelets, and bags. Product cards use category-appropriate editorial photography, and the catalog remains available when the database catalog is empty.
+
+The repository's [`screenshots/`](screenshots/) folder contains desktop and mobile captures of the storefront and product page. Use [`home-full-desktop.png`](screenshots/home-full-desktop.png) for a complete scrollable overview of the new catalog and editorial sections.
+
 - `/` — Persian storefront with category, price, and sort filters
 - `/product/1` — product gallery, purchase controls, rating, and reviews
 - `/cart` — persistent cart and checkout entry point
@@ -10,7 +14,7 @@ The live preview is available from the project Preview panel. The same applicati
 
 ## 1. Browse the storefront
 
-Start at the homepage and scroll to the product section. The refreshed storefront includes a premium RTL editorial layout, mega-menu, interactive search suggestions, responsive category cards, New Arrivals, editorial collections, and Quick View. Open **Advanced filters** to combine one of the four storefront categories (earrings, necklaces, bracelets, or bags) with a price band. The sort control supports newest, lowest price, and highest price.
+Start at the homepage and scroll to the product section. The refreshed storefront includes a premium RTL editorial layout, mega-menu, interactive search suggestions, responsive category cards, New Arrivals, editorial collections, and Quick View. Open **Advanced filters** to combine one of the four storefront categories (earrings, necklaces, bracelets, or bags) with a price band. The sort control supports newest, lowest price, and highest price. The expanded fallback catalog makes the product grid easy to review without requiring seeded database rows.
 
 ## 2. Add an item
 

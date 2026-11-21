@@ -37,7 +37,12 @@ export default function Home() {
   const [quickView, setQuickView] = useState<StoreProduct | null>(null);
   const { cartCount, addToCart, wishlist } = useStore();
   const catalog = trpc.catalog.list.useQuery();
-  const catalogProducts = useMemo<StoreProduct[]>(() => catalog.data?.length ? catalog.data.map((product) => ({ ...product, category: product.category as Exclude<Category, "همه">, badge: product.badge ?? undefined })) : products, [catalog.data]);
+  const catalogProducts = useMemo<StoreProduct[]>(() => {
+    if (!catalog.data?.length) return products;
+    const databaseProducts = catalog.data.map((product) => ({ ...product, category: product.category as Exclude<Category, "همه">, badge: product.badge ?? undefined }));
+    const databaseIds = new Set(databaseProducts.map((product) => product.id));
+    return [...databaseProducts, ...products.filter((product) => !databaseIds.has(product.id))];
+  }, [catalog.data]);
 
   const filteredProducts = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase();
