@@ -72,8 +72,14 @@ Visit `/account` after signing in. Customers can edit their display name, add/re
 
 The server receives Stripe events at `/api/stripe/webhook`. The route is registered before Express's JSON parser so the raw request bytes remain available for signature verification. Processed event IDs are stored in `processedStripeEvents`, making repeated delivery safe.
 
+## 9. Operations monitoring
+
+The API exposes `/api/health` as a lightweight liveness check and `/api/health/deep` as a dependency check. The deep response includes database connectivity, Stripe configuration, inventory exhaustion, uptime, and structured request/error counters. The server emits JSON logs with `event`, `requestId`, status, and duration fields, and can forward incident alerts to `MONITORING_WEBHOOK_URL`.
+
+API and mobile OAuth requests include `RateLimit-*` headers. Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to share the 120-requests-per-minute window across instances. Without Redis, a bounded per-process fallback is used and identified by `X-RateLimit-Backend: memory-fallback`.
+
 ## Demo limitations
 
 - The product catalog is intentionally small and uses editorial image URLs.
 - Storefront prices are shown in تومان, while the Stripe demo uses a USD conversion.
-- Shipping fulfillment, labels, refunds, delivery status, and carrier synchronization are not implemented.
+- Carrier synchronization remains provider-agnostic: fulfillment status, carrier, tracking code, label URL, refunds, and customer notifications are supported, while direct carrier API synchronization requires a provider credential.
