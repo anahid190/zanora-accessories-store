@@ -11,17 +11,17 @@ export default function ProductPage() {
   const [, params] = useRoute("/product/:id");
   const [, setLocation] = useLocation();
   const [quantity, setQuantity] = useState(1);
-  const [liked, setLiked] = useState(false);
   const [activeThumb, setActiveThumb] = useState(0);
   const [openInfo, setOpenInfo] = useState<string | null>("جزئیات محصول");
-  const { cartCount, addToCart } = useStore();
+  const { cartCount, addToCart, wishlist, toggleWishlist, rememberViewed } = useStore();
   const catalog = trpc.catalog.list.useQuery();
   const product = useMemo(() => { const item = catalog.data?.find((candidate) => candidate.id === Number(params?.id)); return item ? { ...item, category: item.category as Product["category"], badge: item.badge ?? undefined } : products.find((item) => item.id === Number(params?.id)); }, [catalog.data, params?.id]);
   const reviewSummary = trpc.reviews.list.useQuery({ productId: product?.id ?? 0 }, { enabled: Boolean(product) });
 
   useEffect(() => {
     if (!product) setLocation("/404");
-  }, [product, setLocation]);
+    else rememberViewed(product.id);
+  }, [product, setLocation, rememberViewed]);
 
   if (!product) {
     return null;
@@ -42,7 +42,7 @@ export default function ProductPage() {
       <main className="container product-main">
         <div className="breadcrumbs"><a href="/">خانه</a><span>/</span><a href={`/?category=${encodeURIComponent(product.category)}`}>{product.category}</a><span>/</span><strong>{product.name}</strong></div>
         <div className="product-detail-grid">
-          <section className="detail-gallery"><div className="detail-main-image"><img src={thumbs[activeThumb]} alt={product.name} />{product.badge && <span className="product-badge">{product.badge}</span>}<button className={`detail-heart ${liked ? "liked" : ""}`} onClick={() => setLiked((value) => !value)} aria-label="افزودن به علاقه‌مندی‌ها"><Heart size={20} fill={liked ? "currentColor" : "none"} /></button></div><div className="thumb-row">{thumbs.map((thumb, index) => <button key={`${thumb}-${index}`} className={activeThumb === index ? "active" : ""} onClick={() => setActiveThumb(index)}><img src={thumb} alt={`${product.name} نمای ${index + 1}`} /></button>)}</div></section>
+          <section className="detail-gallery"><div className="detail-main-image"><img src={thumbs[activeThumb]} alt={product.name} />{product.badge && <span className="product-badge">{product.badge}</span>}<button className={`detail-heart ${wishlist.includes(product.id) ? "liked" : ""}`} onClick={() => toggleWishlist(product.id)} aria-label="افزودن به علاقه‌مندی‌ها"><Heart size={20} fill={wishlist.includes(product.id) ? "currentColor" : "none"} /></button></div><div className="thumb-row">{thumbs.map((thumb, index) => <button key={`${thumb}-${index}`} className={activeThumb === index ? "active" : ""} onClick={() => setActiveThumb(index)}><img src={thumb} alt={`${product.name} نمای ${index + 1}`} /></button>)}</div></section>
           <section className="detail-copy"><p className="eyebrow"><span></span> {product.category} / کالکشن ۱۴۰۵</p><h1>{product.name}</h1><div className="detail-rating"><span>★★★★★</span><small>{reviewSummary.data?.count ? `${reviewSummary.data.average.toFixed(1)} / ۵ (${reviewSummary.data.count} نظر)` : "هنوز نظری ثبت نشده"}</small></div><div className="detail-price">{product.price}</div><p className="detail-description">{product.description}</p><div className="detail-divider" />
             <div className="option-row"><span>رنگ</span><div className="color-options"><button className="color-swatch gold active" aria-label="طلایی" /><button className="color-swatch silver" aria-label="نقره‌ای" /></div></div>
             <div className="purchase-row"><div className="quantity-control"><button onClick={() => setQuantity((value) => Math.max(1, value - 1))} aria-label="کم کردن"><Minus size={15} /></button><span>{quantity}</span><button onClick={() => setQuantity((value) => value + 1)} aria-label="زیاد کردن"><Plus size={15} /></button></div><button className="detail-add-button" onClick={addProduct}>افزودن به سبد <ShoppingBag size={17} /></button></div>

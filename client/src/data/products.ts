@@ -10,9 +10,16 @@ export const products: Product[] = [
   { id: 6, name: "کیف شانه‌ای نوا", category: "کیف", price: "۲٬۸۵۰٬۰۰۰ تومان", priceValue: 2850000, image: "https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?auto=format&fit=crop&w=1100&q=90", description: "کیف شانه‌ای نوا با فرم نرم و بند قابل تنظیم، همراهی کاربردی برای روزهای پررفت‌وآمد توست." },
 ];
 
-export const categories: { label: Category; count: string; image: string }[] = [
-  { label: "گوشواره", count: "۲۴ محصول", image: products[0].image.replace("w=1100", "w=700") },
-  { label: "گردنبند", count: "۱۸ محصول", image: products[1].image.replace("w=1100", "w=700") },
-  { label: "دستبند", count: "۱۶ محصول", image: products[3].image.replace("w=1100", "w=700") },
-  { label: "کیف", count: "۱۲ محصول", image: products[2].image.replace("w=1100", "w=700") },
+export const categories: { label: string; count: string; image: string; filter?: Category }[] = [
+  { label: "گردنبند", count: "۱۸ محصول", image: products[1].image.replace("w=1100", "w=700"), filter: "گردنبند" },
+  { label: "گوشواره", count: "۲۴ محصول", image: products[0].image.replace("w=1100", "w=700"), filter: "گوشواره" },
+  { label: "دستبند", count: "۱۶ محصول", image: products[3].image.replace("w=1100", "w=700"), filter: "دستبند" },
+  { label: "حلقه و ست جواهر", count: "کالکشن ویژه", image: products[4].image.replace("w=1100", "w=700") },
+  { label: "کش و اسکرانچی", count: "کالکشن مو", image: products[5].image.replace("w=1100", "w=700") },
+  { label: "گیره و کلیپس", count: "کالکشن مو", image: products[0].image.replace("w=1100", "w=700") },
+  { label: "هدبند", count: "کالکشن مو", image: products[1].image.replace("w=1100", "w=700") },
+  { label: "کیف زنانه", count: "۱۲ محصول", image: products[2].image.replace("w=1100", "w=700"), filter: "کیف" },
+  { label: "کیف پول", count: "انتخاب روزمره", image: products[3].image.replace("w=1100", "w=700") },
+  { label: "مینی‌بگ", count: "انتخاب ترند", image: products[2].image.replace("w=1100", "w=700") },
+  { label: "ست‌های هدیه", count: "بسته‌بندی اختصاصی", image: products[4].image.replace("w=1100", "w=700") },
 ];

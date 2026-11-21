@@ -10,11 +10,11 @@ The live preview is available from the project Preview panel. The same applicati
 
 ## 1. Browse the storefront
 
-Start at the homepage and scroll to the product section. Open **Advanced filters** to combine a product category with a price band. The sort control supports newest, lowest price, and highest price.
+Start at the homepage and scroll to the product section. The refreshed storefront includes a premium RTL editorial layout, mega-menu, interactive search suggestions, responsive category cards, New Arrivals, editorial collections, and Quick View. Open **Advanced filters** to combine one of the four storefront categories (earrings, necklaces, bracelets, or bags) with a price band. The sort control supports newest, lowest price, and highest price.
 
 ## 2. Add an item
 
-Open a product detail page or use the product card's add button. The cart counter updates immediately and the cart persists after a refresh because it is stored in `localStorage`.
+Open a product detail page or use the product card's add button. The cart counter updates immediately and the cart persists after a refresh because it is stored in `localStorage`. Wishlist selections and recently viewed product IDs are also persisted locally; use the heart button on a card or product gallery to toggle a wishlist item.
 
 ## 3. Authenticate and pay
 

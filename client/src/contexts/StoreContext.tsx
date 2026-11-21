@@ -1,22 +1,32 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Product } from "@/data/products";
 
 type CartItem = { product: Product; quantity: number };
-type StoreContextValue = { cart: CartItem[]; cartCount: number; subtotal: number; addToCart: (product: Product, quantity?: number) => void; updateQuantity: (id: number, quantity: number) => void; removeFromCart: (id: number) => void; clearCart: () => void };
+type StoreContextValue = { cart: CartItem[]; cartCount: number; subtotal: number; wishlist: number[]; recentlyViewed: number[]; addToCart: (product: Product, quantity?: number) => void; updateQuantity: (id: number, quantity: number) => void; removeFromCart: (id: number) => void; clearCart: () => void; toggleWishlist: (id: number) => void; rememberViewed: (id: number) => void };
 const StoreContext = createContext<StoreContextValue | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>(() => { try { return JSON.parse(localStorage.getItem("zanora-cart") || "[]"); } catch { return []; } });
+  const [wishlist, setWishlist] = useState<number[]>(() => { try { return JSON.parse(localStorage.getItem("zanora-wishlist") || "[]"); } catch { return []; } });
+  const [recentlyViewed, setRecentlyViewed] = useState<number[]>(() => { try { return JSON.parse(localStorage.getItem("zanora-recently-viewed") || "[]"); } catch { return []; } });
   useEffect(() => { localStorage.setItem("zanora-cart", JSON.stringify(cart)); }, [cart]);
+  useEffect(() => { localStorage.setItem("zanora-wishlist", JSON.stringify(wishlist)); }, [wishlist]);
+  useEffect(() => { localStorage.setItem("zanora-recently-viewed", JSON.stringify(recentlyViewed)); }, [recentlyViewed]);
+  const toggleWishlist = useCallback((id: number) => setWishlist((items) => items.includes(id) ? items.filter((item) => item !== id) : [...items, id]), []);
+  const rememberViewed = useCallback((id: number) => setRecentlyViewed((items) => { const next = [id, ...items.filter((item) => item !== id)].slice(0, 8); return next.join(",") === items.join(",") ? items : next; }), []);
   const value = useMemo(() => ({
     cart,
     cartCount: cart.reduce((sum, item) => sum + item.quantity, 0),
     subtotal: cart.reduce((sum, item) => sum + item.product.priceValue * item.quantity, 0),
+    wishlist,
+    recentlyViewed,
     addToCart: (product: Product, quantity = 1) => setCart((items) => { const existing = items.find((item) => item.product.id === product.id); return existing ? items.map((item) => item.product.id === product.id ? { ...item, quantity: item.quantity + quantity } : item) : [...items, { product, quantity }]; }),
     updateQuantity: (id: number, quantity: number) => setCart((items) => quantity <= 0 ? items.filter((item) => item.product.id !== id) : items.map((item) => item.product.id === id ? { ...item, quantity } : item)),
     removeFromCart: (id: number) => setCart((items) => items.filter((item) => item.product.id !== id)),
     clearCart: () => setCart([]),
-  }), [cart]);
+    toggleWishlist,
+    rememberViewed,
+  }), [cart, wishlist, recentlyViewed, toggleWishlist, rememberViewed]);
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 export function useStore() { const context = useContext(StoreContext); if (!context) throw new Error("useStore must be used inside StoreProvider"); return context; }
