@@ -43,6 +43,8 @@
 - [x] احراز هویت موبایل با OAuth deep link، کد یک‌بارمصرف و Bearer Token.
 - [x] CORS allowlist، rate limit پایه، request ID و security headers برای API.
 - [x] آزادسازی خودکار رزروهای منقضی با job دوره‌ای ۶۰ ثانیه‌ای، وضعیت مستقل reservation و webhook انقضای Checkout.
+- [x] Rate limit توزیع‌شده با Redis/Upstash، هدرهای استاندارد محدودیت و fallback محدود حافظه‌ای هنگام قطع Redis.
+- [x] مانیتورینگ عملیاتی با لاگ JSON و request ID، health عمیق دیتابیس/Stripe/موجودی، هشدار webhook، پرداخت ناموفق، خطای سرور و موجودی صفر.
 
 ## Documentation and demo
 - [x] README انگلیسی با setup، architecture، environment variables و production checklist.

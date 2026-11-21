@@ -49,6 +49,8 @@ Response:
 {"status":"ok"}
 ```
 
+`GET /api/health/deep` performs dependency checks for the database, Stripe configuration, and out-of-stock inventory. It returns `200` when all checks pass and `503` when degraded, together with uptime and structured metric counters.
+
 ### Public runtime configuration
 
 ```http
@@ -410,15 +412,15 @@ Content-Type: application/json
 {"code":"ONE_TIME_CODE"}
 ```
 
-The response contains a 30-day signed session token:
+The response contains a 15-minute access token and a rotating 30-day refresh token:
 
 ```json
-{"accessToken":"...","tokenType":"Bearer","expiresIn":2592000}
+{"accessToken":"...","refreshToken":"...","tokenType":"Bearer","expiresIn":900}
 ```
 
 Send it on tRPC calls with `Authorization: Bearer {accessToken}`. The same token supports customer procedures and, for an authenticated admin, admin procedures.
 
-The server also supports an explicit CORS allowlist through `APP_CORS_ORIGINS`, request IDs through `x-request-id`, and a basic per-IP rate limit for tRPC and mobile OAuth endpoints.
+The server also supports an explicit CORS allowlist through `APP_CORS_ORIGINS`, request IDs through `x-request-id`, and a 120-requests-per-minute rate limit for tRPC and mobile OAuth endpoints. Responses include `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, and `X-RateLimit-Backend`. Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to share limits across instances; `MONITORING_WEBHOOK_URL` receives alerts for dependency failures, failed payments, webhook failures, out-of-stock products, and unhandled server errors.
 
 Do not put `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `DATABASE_URL`, Manus private keys, or any admin credential in the mobile bundle.
 
@@ -426,9 +428,8 @@ Do not put `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `DATABASE_URL`, Manus p
 
 Remaining production mobile work:
 
-- Add access-token expiry, refresh-token rotation, revocation, and device/session management.
 - Add API versioning and structured error envelopes.
-- Add delivery/fulfillment status and carrier integrations after payment.
+- Direct carrier API synchronization remains optional and requires provider credentials; the provider-agnostic fulfillment contract is already available.
 - Consider a REST/OpenAPI facade if the mobile team does not want to adopt tRPC.
 
 ## Recommended mobile rollout

@@ -44,6 +44,8 @@ API and mobile integration documentation is available in [`docs/API.md`](docs/AP
 - Expandable order details with items, shipping, discount, and final totals
 - Provider-agnostic fulfillment metadata, carrier tracking, shipping label links, Stripe refunds, and customer notifications
 - Explicit inventory reservation lifecycle with a 60-second expiry sweep and `checkout.session.expired` webhook handling
+- Distributed Redis/Upstash rate limiting for tRPC and mobile OAuth, with bounded memory fallback
+- Structured JSON request logs, deep dependency health checks, and configurable monitoring alerts
 - Customer account page at `/account` with profile and saved shipping addresses
 - Address selection during checkout with immutable order-level shipping snapshots
 
@@ -115,9 +117,15 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
 APP_CORS_ORIGINS=https://app.example.com,https://admin.example.com
 MOBILE_REDIRECT_URIS=zanora://oauth/callback
 PUBLIC_APP_ORIGIN=https://shop.example.com
+UPSTASH_REDIS_REST_URL=https://your-region.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+MONITORING_WEBHOOK_URL=https://monitoring.example.com/webhook
+MONITORING_NOTIFY_OWNER=false
 ```
 
 Never commit real secrets. Stripe secrets are consumed only by the server; card numbers, CVCs, and expiry dates are never stored by the application.
+
+If `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are configured, API rate limits are shared across instances through Upstash Redis. If Redis is temporarily unavailable, the server fails open to a bounded per-process limiter and exposes `X-RateLimit-Backend: memory-fallback` so the incident is visible. `GET /api/health/deep` reports database, Stripe configuration, and out-of-stock checks. Operational incidents can be delivered to `MONITORING_WEBHOOK_URL`; setting `MONITORING_NOTIFY_OWNER=true` also uses the Manus notification service.
 
 ## Stripe test flow
 
